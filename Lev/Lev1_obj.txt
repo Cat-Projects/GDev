@@ -1,0 +1,38 @@
+36
+125
+WWWWWWWW   WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW
+WWWWWWWW   WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW
+WWWWWW                  WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW
+WWWWWW                   WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW                   WWWWWWWWWWWWWWWWWWW                WWWWWWWWWW
+WWWWWW                        WWWWWWWWWWWWWWWWWWWWWWWWWWW                      WWWWWWWWWWWWWWWW                   WWWWWWWWWW
+WWWWW                              WWWWWWWWWWWWWWWWWWW                         WWWWWWWWWWWWWW                     WWWWWWWWWW
+WWW                                 WWWWWWWWWWWWWWWW                            WWWWWWWWWWWWW                      WWWWWWWWW
+WWW                                    WWWWWWWWWWWW                                WWWWWWWWW                       WWWWWWWWW
+WWW                                       WWWW                                     WWWWWWWWW                       WWWWWWWWW
+WW                       1                                                           WWWWWWW                       WWWWWWWWW
+WWW                                                                 2                                 W            WWWWWWWWW
+WWW                                    K                                                             WWW           WWWWWWWWW
+WWWW       1                                                                                        WWWWW          WWWWWWWWW
+WWWW        K                                                                                       WWWWW          WWWWWWWWW
+WWWW         P                                                                                      WWCWW          WWWWWWWWW
+WWWWW         1                                                                                                   WWWWWWWWWW
+WWWWW                                                                     1                                       WWWWWWWWWW
+WWWWWW                                  WWWWWWWWWW                                                                WWWWWWWWWW
+WWWWWW                                WWWWWWWWWWWWWWW                                                             WWWWWWWWWW
+WWWWWWW                  1        WWWWWWWWWWWWWWWWWWWWW                                                           WWWWWWWWWW
+WWWWWWW                         WWWWWWWWWWWWWWWWWWWWWWWWWW                                                        WWWWWWWWWW
+WWWWWWWW                      WWWWWWWWWWWWWWWWWWWWWWWWWWWW                                                        WWWWWWWWWW
+WWWWWWWWW                     WWWWWWWWWWWWWWWWWWWWWWWWWWWWW                                                       WWWWWWWWWW
+WWWWWWWWWW                    WWWWWWWWWWWWWWWWWWWWWWWWWWW                                                         WWWWWWWWWW
+WWWWWWWWWWW                    WWWWWWWWWWWWWWWWWWWWWWWWW                                                          WWWWWWWWWW
+WWWWWWWWWWWW                    WWWWWWWWWWWWWWWWWWWWWWW                                                           WWWWWWWWWW
+WWWWWWWWWWWWW                        WWWWWWWWWWW                WWWW                                               WWWWWWWWW
+WWWWWWWWWWWWWWW                                               WWWWWWWWWW                                           WWWWWWWWW
+WWWWWWWWWWWWWWWWW                                            WWWWWWWWWWWWWWWWWWWWWWWWWWW                           WWWWWWWWW
+WWWWWWWWWWWWWWWWWWWWW                          WWWWWW      WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW                        WWWWWWWWW
+WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW                   WWWWWWWWWWW
+WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW             WWWWWWWWWWWW
+WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW         WWWWWWWWWWWWWWW
+WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW   WWWWWWWWWWWWWWWWWW
+WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW   WWWWWWWWWWWWWWWWWW
+WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW   WWWWWWWWWWWWWWWWWW
