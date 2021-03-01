@@ -5,16 +5,18 @@
 enum {up = 72, down = 80, left = 75, right = 77, use};
 struct player { int x, y, health, key; };
 
-
-void View(int x, int y, char map_lev[N][N], char map_obj[N][N], HANDLE handle);
 void Player_View(int &rows, int &cols, char map_lev[N][N], char map_obj[N][N], char map_fog[N][N], HANDLE handle);
 void Show_Level(int &rows, int &cols, char map_lev[N][N], char map_obj[N][N], HANDLE handle);
 void TestWrite(int rows, int cols, char map_lev[N][N], char name[]);
 void TestRead(int &rows, int &cols, char map_lev[N][N], char name[]);
-void Check(int &y, int &x, char map_obj[N][N], int mov, int &key);
+void CheckP(player &p, char map_obj[N][N], int mov);
 void PlayerTurn(player &p, char map_obj[N][N]);
 void color();
 void setcur(int x, int y);
+void Read_Lev(int &rows, int &cols, char map_lev[N][N], char name[]);
+void Read_Obj(int rows, int cols, player &p, char map_obj[N][N], char name[]);
+void Read_Fog(int rows, int cols, char map_fog[N][N], char name[]);
+void Fog_Change(int rows, int cols, player p, char map_fog[N][N]);
 
 int main()
 {
@@ -31,17 +33,20 @@ int main()
 	char map_fog[N][N];
 
 	//color();
-	//TestInp(rows, cols, map_lev);
 
-	TestRead(rows, cols, map_lev, "Lev/Lev2.txt");
-	TestRead(rows, cols, map_obj, "Lev/Lev2_obj.txt");
-	Show_Level(rows, cols, map_lev, map_obj, handle);
+	Read_Lev(rows, cols, map_lev, "Lev/Lev2.txt");
+	Read_Obj(rows, cols, p, map_obj, "Lev/Lev2_obj.txt");
+	Read_Fog(rows, cols, map_fog, "Lev/Lev2_fog.txt");
+	//Show_Level(rows, cols, map_lev, map_obj, handle);
 	//TestRead(rows, cols, map_fog, "Lev/Lev3_fog.txt");
-	//Player_View(rows, cols, map_lev, map_obj, map_fog, handle);
+	Fog_Change(rows, cols, p, map_fog);
+	Player_View(rows, cols, map_lev, map_obj, map_fog, handle);
 	do
 	{
 		PlayerTurn(p, map_obj);
-		Show_Level(rows, cols, map_lev, map_obj, handle);
+		Fog_Change(rows, cols, p, map_fog);
+		Player_View(rows, cols, map_lev, map_obj, map_fog, handle);
+		//Show_Level(rows, cols, map_lev, map_obj, handle);
 	} while (true);
 	//View(15, 15, map_lev, map_obj, handle);
 	//TestWrite(rows, cols , map_lev,"TO2.txt");
@@ -105,81 +110,91 @@ void color()
 	//Функция отображения карты *В разработке
 void Player_View(int &rows, int &cols, char map_lev[N][N], char map_obj[N][N], char map_fog[N][N], HANDLE handle)
 {
+	setcur(0, 0);
 	for (int i = 0; i <rows; i++)
 	{
 		for (int j = 0; j < cols; j++)
-			switch (map_fog[i][j])
+		{//Вначале проверяем клетку массива объектов на наличие в ней объекта
+		 //Если есть то выводим
+			switch(map_fog[i][j])
 			{
-			default:
+			default :
+				SetConsoleTextAttribute(handle, 15);
+				printf("\n");
+				break;
+			case '0':
 				SetConsoleTextAttribute(handle, 15);
 				printf(" ");
 				break;
-			case '\n':
-				printf("\n");
+			case '1':
+			switch (map_obj[i][j])
+			{
+			case 'K':
+				SetConsoleTextAttribute(handle, 14);
+				printf("K");
+				break;
+			case 'P':
+				SetConsoleTextAttribute(handle, 15);
+				printf("@");
+				break;
+			case 'C':
+				SetConsoleTextAttribute(handle, 14);
+				printf("D");
 				break;
 			case '1':
-				switch (map_obj[i][j]) 
-				{
-				case 'K':
-					SetConsoleTextAttribute(handle, 14);
-					printf("K");
+				SetConsoleTextAttribute(handle, 12);
+				printf("§");
+				break;
+			case '2':
+				SetConsoleTextAttribute(handle, 13);
+				printf("¤");
+				break;
+			case ' ':
+				switch (map_lev[i][j])
+				{//Если в массиве объектов пробел то 
+				 //Выводим символ из массива геометрии уровня
+				 //Через эти символы у игрока есть возможность передвигаться
+				case' ':
+					SetConsoleTextAttribute(handle, 8);
+					printf(".");
 					break;
-				case 'P':
+				case '¶':
+					SetConsoleTextAttribute(handle, 2);
+					printf("%c", map_lev[i][j]);
+					break;
+				case 'D':
 					SetConsoleTextAttribute(handle, 15);
-					printf("@");
+					printf("%c", map_lev[i][j]);
 					break;
-				case 'C':
-					SetConsoleTextAttribute(handle, 14);
-					printf("D");
+				}
+				break;
+			case 'W':
+				switch (map_lev[i][j])
+				{
+					//Если в массиве объектов 'W' то 
+					//Выводим символ из массива геометрии уровня
+					//Через эти символы у игрока нету возможности передвигаться
+				case '^':
+					SetConsoleTextAttribute(handle, 7);
+					printf("%c", map_lev[i][j]);
 					break;
-				case '1':
-					SetConsoleTextAttribute(handle, 12);
-					printf("§");
-					break;
-				case '2':
-					SetConsoleTextAttribute(handle, 13);
-					printf("¤");
+				case '~':
+					SetConsoleTextAttribute(handle, 159);
+					printf("%c", map_lev[i][j]);
 					break;
 				case ' ':
-					switch (map_lev[i][j]) 
-					{
-						case' ':
-							SetConsoleTextAttribute(handle, 8);
-							printf(".");
-							break;
-						case '¶':
-							SetConsoleTextAttribute(handle, 2);
-							printf("%c", map_lev[i][j]);
-							break;
-						case 'D':
-							SetConsoleTextAttribute(handle, 15);
-							printf("%c", map_lev[i][j]);
-							break;
-					}
+					SetConsoleTextAttribute(handle, 15);
+					printf("#");
 					break;
-					case 'W':
-						switch(map_lev[i][j])
-						{		
-						case '^':
-							SetConsoleTextAttribute(handle,7);
-							printf("%c", map_lev[i][j]);
-							break;
-						case ' ':
-							SetConsoleTextAttribute(handle, 15);
-							printf("#");
-							break;
-						case '~':
-							SetConsoleTextAttribute(handle, 159);
-							printf("%c", map_lev[i][j]);
-							break;
-						default: 
-							SetConsoleTextAttribute(handle, 15);
-							printf("%c",map_lev[i][j]);
-							break;	
+				default:
+					SetConsoleTextAttribute(handle, 15);
+					printf("%c", map_lev[i][j]);
+					break;
 				}
 				break;
 			}
 			break;
+			}
 		}
 	}
 	SetConsoleTextAttribute(handle, 15);
@@ -278,91 +293,91 @@ void setcur(int x, int y)//установка курсора на позицию  x y
 	SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), coord);
 };
 
-void Check(int &y, int &x, char map_obj[N][N], int mov, int &key)
+void CheckP(player &p, char map_obj[N][N], int mov)
 {
 	switch (mov)
 	{
 		case up:
-			switch(map_obj[y - 1][x])
+			switch(map_obj[p.y - 1][p.x])
 			{
 			case ' ':
-				map_obj[y - 1][x] = 'P';
-				map_obj[y][x] = ' ';
-				y--;
+				map_obj[p.y - 1][p.x] = 'P';
+				map_obj[p.y][p.x] = ' ';
+				p.y--;
 				break;
 			case 'C':
-				if (key)
+				if (p.key)
 				{
-					map_obj[y - 1][x] = ' ';
-					key--;
+					map_obj[p.y - 1][p.x] = ' ';
+					p.key--;
 				}
 				break;
 			case 'K':
-				key++;
-				map_obj[y - 1][x] = ' ';
+				p.key++;
+				map_obj[p.y - 1][p.x] = ' ';
 				break;
 			}
 			break;
 		case down:
-			switch (map_obj[y + 1][x])
+			switch (map_obj[p.y + 1][p.x])
 			{
 			case ' ':
-				map_obj[y + 1][x] = 'P';
-				map_obj[y][x] = ' ';
-				y++;
+				map_obj[p.y + 1][p.x] = 'P';
+				map_obj[p.y][p.x] = ' ';
+				p.y++;
 				break;
 			case 'C':
-				if (key)
+				if (p.key)
 				{
-					map_obj[y + 1][x] = ' ';
-					key--;
+					map_obj[p.y + 1][p.x] = ' ';
+					p.key--;
 				}
 				break;
 			case 'K':
-				key++;
-				map_obj[y + 1][x] = ' ';
+				p.key++;
+				map_obj[p.y + 1][p.x] = ' ';
 				break;
 			}
 			break;
 		case left:
-			switch (map_obj[y][x - 1])
+			switch (map_obj[p.y][p.x - 1])
 			{
 			case ' ':
-				map_obj[y][x - 1] = 'P';
-				map_obj[y][x] = ' ';
-				x--;
+				map_obj[p.y][p.x - 1] = 'P';
+				map_obj[p.y][p.x] = ' ';
+				p.x--;
 				break;
 			case 'C':
-				if (key)
+				if (p.key)
 				{
-					map_obj[y][x - 1] = ' ';
-					key--;
+					map_obj[p.y][p.x - 1] = ' ';
+					p.key--;
 				}
 				break;
 			case 'K':
-				key++;
-				map_obj[y][x - 1] = ' ';
+				p.key++;
+				map_obj[p.y][p.x - 1] = ' ';
 				break;
 			}
 			break;
 		case right:
-			switch (map_obj[y][x + 1])
+			switch (map_obj[p.y][p.x + 1])
 			{
 			case ' ':
-				map_obj[y][x + 1] = 'P';
-				map_obj[y][x] = ' ';
-				x++;
+				map_obj[p.y][p.x + 1] = 'P';
+				map_obj[p.y][p.x] = ' ';
+				p.x++;
 				break;
 			case 'C':
-				if (key)
+				if (p.key)
 				{
-					map_obj[y][x + 1] = ' ';
-					key--;
+					map_obj[p.y][p.x + 1] = ' ';
+					p.key--;
 				}
 				break;
 			case 'K':
-				key++;
-				map_obj[y][x + 1] = ' ';
+				p.key++;
+				map_obj[p.y][p.x + 1] = ' ';
 				break;
 			}
 			break;
@@ -376,85 +391,6 @@ int Randomize(int a, int b)
 	return rand() % (b - a + 1) + a;
 }
 
-	//Функция отображения карты для игрока *V2
-void View(int x, int y, char map_lev[N][N], char map_obj[N][N], HANDLE handle)
-{
-	for (int i = y-3 ; i <y+2 ; i++)
-	{
-		printf("\n");
-		for (int j = x - 6; j < x+3 ; j++)
-		{ 
-			switch (map_obj[i][j])
-			{
-			case '\n':
-				SetConsoleTextAttribute(handle, 15);
-				printf("\n");
-				break;
-			case ' ':
-				SetConsoleTextAttribute(handle, 15);
-				printf(" ");
-				break;
-			case 'K':
-				SetConsoleTextAttribute(handle, 14);
-				printf("K");
-				break;
-			case 'P':
-				SetConsoleTextAttribute(handle, 15);
-				printf("@");
-				break;
-			case 'C':
-				SetConsoleTextAttribute(handle, 14);
-				printf("D");
-				break;
-			case '1':
-				SetConsoleTextAttribute(handle, 12);
-				printf("§");
-				break;
-			case '2':
-				SetConsoleTextAttribute(handle, 13);
-				printf("¤");
-				break;
-			case '0':
-				switch (map_lev[i][j])
-				{
-				case' ':
-					SetConsoleTextAttribute(handle, 15);
-					printf(".");
-					break;
-				case '¶':
-					SetConsoleTextAttribute(handle, 2);
-					printf("%c", map_lev[i][j]);
-					break;
-				case 'D':
-					SetConsoleTextAttribute(handle, 15);
-					printf("%c", map_lev[i][j]);
-					break;
-				}
-				break;
-			case 'W':
-				switch (map_lev[i][j])
-				{
-				case '^':
-					SetConsoleTextAttribute(handle, 8);
-					printf("%c", map_lev[i][j]);
-					break;
-				case '~':
-					SetConsoleTextAttribute(handle, 159);
-					printf("%c", map_lev[i][j]);
-					break;
-				default:
-					SetConsoleTextAttribute(handle, 8);
-					printf("%c", map_lev[i][j]);
-					break;
-				}
-				break;
-			}
-		}
-	}
-	SetConsoleTextAttribute(handle, 15);
-	printf("\n");
-}
-
 	//Функция ввода клавиши во время хода игрока
 void PlayerTurn(player &p, char map_obj[N][N])
 {
@@ -464,7 +400,7 @@ void PlayerTurn(player &p, char map_obj[N][N])
 		int act = _getch();
 		if (act == 72 || act == 80 || act == 75 || act == 77)
 		{
-			Check(p.y, p.x, map_obj, act, p.key);
+			CheckP(p, map_obj, act);
 			return;
 		}
 		else if (act == 141 || act == 145 || act == 115 || act == 116)
@@ -473,4 +409,103 @@ void PlayerTurn(player &p, char map_obj[N][N])
 			return;
 		}
 	} while (true);
+}
+
+void Read_Lev(int &rows, int &cols, char map_lev[N][N], char name[])
+{
+	FILE* ReadLev;
+	if (fopen_s(&ReadLev, name, "r+") != 0)
+	{
+		printf("ERROR");
+		system("pause");
+		exit(1);
+	}
+	fscanf_s(ReadLev, "%i", &rows);
+	fscanf_s(ReadLev, "%i\r", &cols);
+	for (int i = 0; i < rows; i++)
+	{
+		for (int j = 0; j < cols; j++)
+			fscanf_s(ReadLev, "%c", &map_lev[i][j]);
+	}
+	fclose(ReadLev);
+}
+
+void Read_Obj(int rows, int cols, player &p, char map_obj[N][N], char name[])
+{
+	FILE* ReadObj;
+	if (fopen_s(&ReadObj, name, "r+") != 0)
+	{
+		printf("ERROR");
+		system("pause");
+		exit(1);
+	}
+	fscanf_s(ReadObj, "%i", &p.x);
+	fscanf_s(ReadObj, "%i\r", &p.y);
+	for (int i = 0; i < rows; i++)
+	{
+		for (int j = 0; j < cols; j++)
+			fscanf_s(ReadObj, "%c", &map_obj[i][j]);
+	}
+	fclose(ReadObj);
+}
+
+void Read_Fog(int rows, int cols, char map_fog[N][N], char name[])
+{
+	FILE* ReadFog;
+	if (fopen_s(&ReadFog, name, "r+") != 0)
+	{
+		printf("ERROR");
+		system("pause");
+		exit(1);
+	}
+	for (int i = 0; i < rows; i++)
+	{
+		for (int j = 0; j < cols; j++)
+			fscanf_s(ReadFog, "%c", &map_fog[i][j]);
+	}
+	fclose(ReadFog);
+}
+
+void Fog_Change(int rows, int cols, player p, char map_fog[N][N])
+{
+	int a, b;
+	if (p.y - 3 < 0)
+	{
+		a = 0;
+		b = p.y + 3;
+	}
+	else if (p.y + 3 >= rows)
+	{
+		a = p.y - 3;
+		b = rows;
+	}
+	else
+	{
+		a = p.y - 3;
+		b = p.y + 3;
+	}
+
+	int c, d;
+	if (p.x - 3 <0)
+	{
+		c = 0;
+		d = p.x + 3;
+	}
+	else if (p.x + 3 >= cols)
+	{
+		c = p.x - 3;
+		d = cols-1;
+	}
+	else
+	{
+		c = p.x - 3;
+		d = p.x + 3;
+	}
+	for (int i = a; i < b; i++)
+	{
+		for (int j = c; j < d; j++)
+		{
+			map_fog[i][j] = '1';
+		}
+	}
 }
