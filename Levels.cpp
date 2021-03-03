@@ -17,6 +17,10 @@ void Read_Lev(int &rows, int &cols, char map_lev[N][N], char name[]);
 void Read_Obj(int rows, int cols, player &p, char map_obj[N][N], char name[]);
 void Read_Fog(int rows, int cols, char map_fog[N][N], char name[]);
 void Fog_Change(int rows, int cols, player p, char map_fog[N][N]);
+void Main_Menu(int &rows, int &cols, player &p, char map_lev[N][N], char map_obj[N][N], char map_fog[N][N]);
+void Level_Load(int &rows, int &cols, player &p, char map_lev[N][N], char map_obj[N][N], char map_fog[N][N]);
+void Refresh(int &rows, int &cols, player p, char map_lev[N][N], char map_obj[N][N], char map_fog[N][N], HANDLE handle);
+void Game_Process(int &rows, int &cols, player p, char map_lev[N][N], char map_obj[N][N], char map_fog[N][N], HANDLE handle);
 
 int main()
 {
@@ -32,24 +36,9 @@ int main()
 	char map_obj[N][N];
 	char map_fog[N][N];
 
-	//color();
-
-	Read_Lev(rows, cols, map_lev, "Lev/Lev2.txt");
-	Read_Obj(rows, cols, p, map_obj, "Lev/Lev2_obj.txt");
-	Read_Fog(rows, cols, map_fog, "Lev/Lev2_fog.txt");
-	//Show_Level(rows, cols, map_lev, map_obj, handle);
-	//TestRead(rows, cols, map_fog, "Lev/Lev3_fog.txt");
-	Fog_Change(rows, cols, p, map_fog);
-	Player_View(rows, cols, map_lev, map_obj, map_fog, handle);
-	do
-	{
-		PlayerTurn(p, map_obj);
-		Fog_Change(rows, cols, p, map_fog);
-		Player_View(rows, cols, map_lev, map_obj, map_fog, handle);
-		//Show_Level(rows, cols, map_lev, map_obj, handle);
-	} while (true);
-	//View(15, 15, map_lev, map_obj, handle);
-	//TestWrite(rows, cols , map_lev,"TO2.txt");
+	Main_Menu(rows, cols, p, map_lev, map_obj, map_fog);
+	Refresh(rows, cols, p, map_lev, map_obj, map_fog, handle);
+	Game_Process(rows, cols, p, map_lev, map_obj, map_fog, handle);
 	system("pause");
 	return 0;
 }
@@ -285,7 +274,8 @@ void Show_Level(int &rows, int &cols, char map_lev[N][N], char map_obj[N][N], HA
 	printf("\n");
 }
 
-void setcur(int x, int y)//установка курсора на позицию  x y
+	//Костыль для избавления от "мигания" консоли при очистке
+void setcur(int x, int y)
 {
 	COORD coord;
 	coord.X = x;
@@ -293,6 +283,7 @@ void setcur(int x, int y)//установка курсора на позицию  x y
 	SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), coord);
 };
 
+	//Передвежение игрока и взаимодействие с предметами
 void CheckP(player &p, char map_obj[N][N], int mov)
 {
 	switch (mov)
@@ -385,7 +376,8 @@ void CheckP(player &p, char map_obj[N][N], int mov)
 			break;
 	}
 }
-	// Функция случайного выбора шаблонов *Не реализована
+	
+// Функция случайного выбора шаблонов *Не реализована
 int Randomize(int a, int b)
 {
 	return rand() % (b - a + 1) + a;
@@ -411,6 +403,7 @@ void PlayerTurn(player &p, char map_obj[N][N])
 	} while (true);
 }
 
+	//Функция загрузки геометрии карты
 void Read_Lev(int &rows, int &cols, char map_lev[N][N], char name[])
 {
 	FILE* ReadLev;
@@ -430,6 +423,7 @@ void Read_Lev(int &rows, int &cols, char map_lev[N][N], char name[])
 	fclose(ReadLev);
 }
 
+	//Функция загрузки объектов карты
 void Read_Obj(int rows, int cols, player &p, char map_obj[N][N], char name[])
 {
 	FILE* ReadObj;
@@ -449,6 +443,7 @@ void Read_Obj(int rows, int cols, player &p, char map_obj[N][N], char name[])
 	fclose(ReadObj);
 }
 
+	//Функция загрузки тумана войны
 void Read_Fog(int rows, int cols, char map_fog[N][N], char name[])
 {
 	FILE* ReadFog;
@@ -466,6 +461,7 @@ void Read_Fog(int rows, int cols, char map_fog[N][N], char name[])
 	fclose(ReadFog);
 }
 
+	//Обновление тумана войны
 void Fog_Change(int rows, int cols, player p, char map_fog[N][N])
 {
 	int a, b;
@@ -489,9 +485,9 @@ void Fog_Change(int rows, int cols, player p, char map_fog[N][N])
 	if (p.x - 3 <0)
 	{
 		c = 0;
-		d = p.x + 3;
+		d = p.x + 4;
 	}
-	else if (p.x + 3 >= cols)
+	else if (p.x + 4 >= cols)
 	{
 		c = p.x - 3;
 		d = cols-1;
@@ -499,7 +495,7 @@ void Fog_Change(int rows, int cols, player p, char map_fog[N][N])
 	else
 	{
 		c = p.x - 3;
-		d = p.x + 3;
+		d = p.x + 4;
 	}
 	for (int i = a; i < b; i++)
 	{
@@ -508,4 +504,37 @@ void Fog_Change(int rows, int cols, player p, char map_fog[N][N])
 			map_fog[i][j] = '1';
 		}
 	}
+}
+
+	//Загрузка уровня
+void Level_Load(int &rows, int &cols, player &p, char map_lev[N][N], char map_obj[N][N], char map_fog[N][N])
+{
+	Read_Lev(rows, cols, map_lev, "Lev/Lev2_v2.txt");
+	Read_Obj(rows, cols, p, map_obj, "Lev/Lev2_obj.txt");
+	Read_Fog(rows, cols, map_fog, "Lev/Lev2_fog.txt");
+}
+
+	//Главное меню игры
+void Main_Menu(int &rows, int &cols, player &p, char map_lev[N][N], char map_obj[N][N], char map_fog[N][N])
+{
+	Level_Load(rows, cols, p, map_lev, map_obj, map_fog);
+}
+	
+	//Обновление экрана игрока
+void Refresh(int &rows, int&cols, player p, char map_lev[N][N], char map_obj[N][N], char map_fog[N][N], HANDLE handle)
+{
+	Fog_Change(rows, cols, p, map_fog);
+	Player_View(rows, cols, map_lev, map_obj, map_fog, handle);
+}
+
+	//Основной процесс игры
+void Game_Process(int &rows, int &cols, player p, char map_lev[N][N], char map_obj[N][N], char map_fog[N][N], HANDLE handle)
+{
+	do
+	{
+		PlayerTurn(p, map_obj);
+		Fog_Change(rows, cols, p, map_fog);
+		Player_View(rows, cols, map_lev, map_obj, map_fog, handle);
+		//Show_Level(rows, cols, map_lev, map_obj, handle);
+	} while (true);
 }
