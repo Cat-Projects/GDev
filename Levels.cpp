@@ -30,6 +30,7 @@ bool PlayerInVision_LEFT(player player, char map[N][N], Enemy mas[], int i, int 
 bool PlayerInVision_RIGHT(player player, char map[N][N], Enemy mas[], int i, int radius);
 void EnemyTurn(player& player, char map[N][N], Enemy mas[], int total);
 bool IsFree(char map_obj[N][N], int x, int y);
+int Level_Choice();
 
 
 
@@ -548,12 +549,38 @@ void Input_Enemy(int rows, int cols, char map_obj[N][N], Enemy mas[], int& total
 	return;
 }
 
+void New_Game(int &rows, int &cols, player &p, char map_lev[N][N], char map_obj[N][N], char map_fog[N][N], Enemy mas[], int& total)
+{
+	char name1[] = "Lev/Lev1.txt";
+	char name2[] = "Lev/Lev1_obj.txt";
+	char name3[] = "Lev/Lev1_fog.txt";
+	Read_Lev(rows, cols, map_lev, name1);
+	Read_Obj(rows, cols, p, map_obj, name2);
+	Read_Fog(rows, cols, map_fog, name3);
+	Input_Enemy(rows, cols, map_obj, mas, total);
+}
 	//Загрузка уровня
 void Level_Load(int &rows, int &cols, player &p, char map_lev[N][N], char map_obj[N][N], char map_fog[N][N], Enemy mas[], int& total)
 {
-	char name1[] = "Lev/Lev2_v2.txt";
-	char name2[] = "Lev/Lev2_obj.txt";
-	char name3[] = "Lev/Lev2_fog.txt";
+	char name1[20];
+	char name2[20];
+	char name3[20];
+	switch(Level_Choice())
+	{
+	default:
+		strcpy_s(name1, "Lev2.txt");
+		strcpy_s(name2, "Lev2_obj.txt");
+		strcpy_s(name3, "Lev2_fog.txt");
+	case 2:
+		strcpy_s(name1, "Lev2.txt");
+		strcat_s(name2, "Lev2_obj.txt");
+		strcat_s(name3, "Lev2_fog.txt");
+	case 3:
+		strcat_s(name1, "Lev3.txt");
+		strcat_s(name2, "Lev3_obj.txt");
+		strcat_s(name3, "Lev3_fog.txt");
+	}
+
 	Read_Lev(rows, cols, map_lev, name1);
 	Read_Obj(rows, cols, p, map_obj, name2);
 	Read_Fog(rows, cols, map_fog, name3);
@@ -561,11 +588,55 @@ void Level_Load(int &rows, int &cols, player &p, char map_lev[N][N], char map_ob
 	return;
 }
 
+int Level_Choice()
+{
+	int act;
+	do
+	{
+		int n = _getch();
+		 act =_getch();
+		switch (act)
+		{
+		case 49:
+			return 1;
+		case 50:
+			return 2;
+		case 51:
+			return 3;
+		default:
+			break;
+		}
+	} while (act < 49 || act > 51);
+}
 
 	//Главное меню игры
 void Main_Menu(int &rows, int &cols, player &p, char map_lev[N][N], char map_obj[N][N], char map_fog[N][N], Enemy mas[], int &total)
 {
-	Level_Load(rows, cols, p, map_lev, map_obj, map_fog, mas, total);
+	//
+	//Функция названия
+	//
+	bool check=1;
+	do
+	{
+		int n = _getch();
+		int act = _getch();
+		switch (act)
+		{
+		case 49:
+			New_Game(rows, cols, p, map_lev, map_obj, map_fog, mas, total);
+			check = 0;
+			break;
+		case 50:
+			Level_Load(rows, cols, p, map_lev, map_obj, map_fog, mas, total);
+			check = 0;
+			break;
+		//case 51:Титры
+		case 27:
+			exit(0);
+		default:
+			printf("%i\n",act);
+		}
+	} while (check);
 }
 	
 	//Обновление экрана игрока
