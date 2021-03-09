@@ -31,87 +31,39 @@ bool PlayerInVision_RIGHT(player player, char map[N][N], Enemy mas[], int i, int
 void EnemyTurn(player& player, char map[N][N], Enemy mas[], int total);
 bool IsFree(char map_obj[N][N], int x, int y);
 int Level_Choice();
+void Print_Name();
+void Print_Menu();
+void Print_Map(int i, int j, char map_lev[N][N], char map_obj[N][N], HANDLE handle);
+void Player_View2(int rows, int cols, char map_lev[N][N], char map_obj[N][N], player p, HANDLE handle);
 
 
 
 int main()
 {
+	system("chcp 1251");
 	player p;
+	p.x = 16; p.y = 25; p.key = 0; p.hp = 3;
 	Enemy mas[N];
 	int total = 0;
-	p.x = 16; p.y = 25; p.key = 0; p.hp = 3;
 	HANDLE handle = GetStdHandle(STD_OUTPUT_HANDLE);
-
-	system("cls");
 
 	int rows, cols;
 	char map_lev[N][N];
 	char map_obj[N][N];
 	char map_fog[N][N];
-
-	Main_Menu(rows, cols, p, map_lev, map_obj, map_fog, mas, total);
-	system("cls");
-	printf("%i %i . %i %i", mas[0].x, mas[0].y, mas[total - 1].x, mas[total - 1].y);
-	system("pause");
-	Refresh(rows, cols, p, map_lev, map_obj, map_fog, handle);
-	Game_Process(rows, cols, p, map_lev, map_obj, map_fog, handle, mas, total);
-	system("pause");
+	do
+	{
+		system("cls");
+		Main_Menu(rows, cols, p, map_lev, map_obj, map_fog, mas, total);
+		system("cls");
+		//printf("%i %i . %i %i", mas[0].x, mas[0].y, mas[total - 1].x, mas[total - 1].y);
+		//system("pause");
+		Refresh(rows, cols, p, map_lev, map_obj, map_fog, handle);
+		Game_Process(rows, cols, p, map_lev, map_obj, map_fog, handle, mas, total);
+		system("pause");
+	} while (true);
 	return 0;
 }
-	//Функция записи общей геометрии карты *Для тестов
-void TestWrite(int rows, int cols, char map_lev[N][N], char name[])
-{
-	FILE* TestLev;
-	if (fopen_s(&TestLev, name, "w+") != 0)
-	{
-		printf("ERROR");
-		system("pause");
-		exit(1);
-	}
-	fprintf(TestLev, "%i\n", rows+1);
-	fprintf(TestLev, "%i\n", cols);
-	for (int i = 0; i<rows; i++)
-	{
-		for (int j = 0; j<cols; j++)
-			fprintf(TestLev, "%c", map_lev[i][j]);
-		fprintf(TestLev, "\n");
-	}
-	fclose(TestLev);
-}
-
-	//Функция загрузки карты *В разработке
-void TestRead(int &rows, int &cols, char map_lev[N][N], char name[])
-{
-	FILE* TestLev;
-	if (fopen_s(&TestLev, name, "r+") != 0)
-	{
-		printf("ERROR");
-		system("pause");
-		exit(1);
-	}
-	fscanf_s(TestLev, "%i", &rows);
-	fscanf_s(TestLev, "%i\r", &cols);
-	for (int i = 0; i < rows; i++)
-	{
-		for (int j = 0; j < cols; j++)
-			fscanf_s(TestLev, "%c", &map_lev[i][j]);
-	}
-	fclose(TestLev);
-}
-
-	//Функция выведения палитры цветов *Для тестов
-void color()
-{
-	HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
-	for (int k = 1; k < 255; k++)
-	{
-		SetConsoleTextAttribute(hConsole, k);
-		printf("Цвет = %i", k);
-		SetConsoleTextAttribute(hConsole, 15);
-		printf("\n");
-	}
-}
-	
 	//Функция отображения карты *В разработке
 void Player_View(int &rows, int &cols, char map_lev[N][N], char map_obj[N][N], char map_fog[N][N], HANDLE handle)
 {
@@ -501,9 +453,9 @@ void Fog_Change(int rows, int cols, player p, char map_fog[N][N])
 	if (p.x - 3 <0)
 	{
 		c = 0;
-		d = p.x + 4;
+		d = p.x + 3;
 	}
-	else if (p.x + 4 >= cols)
+	else if (p.x + 3 >= cols)
 	{
 		c = p.x - 3;
 		d = cols-1;
@@ -521,7 +473,6 @@ void Fog_Change(int rows, int cols, player p, char map_fog[N][N])
 		}
 	}
 }
-
 
 void Input_Enemy(int rows, int cols, char map_obj[N][N], Enemy mas[], int& total)
 {
@@ -559,26 +510,65 @@ void New_Game(int &rows, int &cols, player &p, char map_lev[N][N], char map_obj[
 	Read_Fog(rows, cols, map_fog, name3);
 	Input_Enemy(rows, cols, map_obj, mas, total);
 }
+
+void Print_Menu()
+{
+	printf("\n\n\t Нажмите: 1 - чтобы начать новую игру, "
+		"2 - чтобы выбрать уровень, ESC - чтобы выйти");
+}
+
+void Print_Name()
+{
+	int rows, cols;
+	char mas[15][119];
+	FILE* ReadMenu;
+	if (fopen_s(&ReadMenu, "Lev/Menu.txt", "r+") != 0)
+	{
+		printf("ERROR");
+		system("pause");
+		exit(2);
+	}
+	fscanf_s(ReadMenu, "%i", &rows);
+	fscanf_s(ReadMenu, "%i\r", &cols);
+	for (int i = 0; i < rows; i++)
+	{
+		fgets(mas[i], 118, ReadMenu);
+		printf("\t");
+			for (int j = 0; j < cols; j++)
+		{
+			printf("%c", mas[i][j]);
+		}
+	}
+	fclose(ReadMenu);
+
+
+}
+
 	//Загрузка уровня
 void Level_Load(int &rows, int &cols, player &p, char map_lev[N][N], char map_obj[N][N], char map_fog[N][N], Enemy mas[], int& total)
 {
-	char name1[20];
-	char name2[20];
-	char name3[20];
+	system("cls");
+	char name1[20] = "Lev";
+	char name2[20] = "Lev";
+	char name3[20] = "Lev";
+	printf("Выберете уровень: 1 - Первый уровень, 2 - Второй уровень, 3 - Третий уровень");
 	switch(Level_Choice())
 	{
 	default:
-		strcpy_s(name1, "Lev2.txt");
-		strcpy_s(name2, "Lev2_obj.txt");
-		strcpy_s(name3, "Lev2_fog.txt");
+		strcat_s(name1, "/Lev1.txt");
+		strcat_s(name2, "/Lev1_obj.txt");
+		strcat_s(name3, "/Lev1_fog.txt");
+		break;
 	case 2:
-		strcpy_s(name1, "Lev2.txt");
-		strcat_s(name2, "Lev2_obj.txt");
-		strcat_s(name3, "Lev2_fog.txt");
+		strcat_s(name1, "/Lev2_v2.txt");
+		strcat_s(name2, "/Lev2_obj.txt");
+		strcat_s(name3, "/Lev2_fog.txt");
+		break;
 	case 3:
-		strcat_s(name1, "Lev3.txt");
-		strcat_s(name2, "Lev3_obj.txt");
-		strcat_s(name3, "Lev3_fog.txt");
+		strcat_s(name1, "/Lev3.txt");
+		strcat_s(name2, "/Lev3_obj.txt");
+		strcat_s(name3, "/Lev3_fog.txt");
+		break;
 	}
 
 	Read_Lev(rows, cols, map_lev, name1);
@@ -587,7 +577,8 @@ void Level_Load(int &rows, int &cols, player &p, char map_lev[N][N], char map_ob
 	Input_Enemy(rows, cols, map_obj, mas, total);
 	return;
 }
-
+	
+	//Выбор уровня
 int Level_Choice()
 {
 	int act;
@@ -612,10 +603,9 @@ int Level_Choice()
 	//Главное меню игры
 void Main_Menu(int &rows, int &cols, player &p, char map_lev[N][N], char map_obj[N][N], char map_fog[N][N], Enemy mas[], int &total)
 {
-	//
-	//Функция названия
-	//
-	bool check=1;
+	Print_Name();
+	Print_Menu();
+	bool check = 1;
 	do
 	{
 		int n = _getch();
@@ -642,7 +632,9 @@ void Main_Menu(int &rows, int &cols, player &p, char map_lev[N][N], char map_obj
 	//Обновление экрана игрока
 void Refresh(int &rows, int&cols, player p, char map_lev[N][N], char map_obj[N][N], char map_fog[N][N], HANDLE handle)
 {
-	Show_Level(rows, cols, map_lev, map_obj, handle);
+	//Show_Level(rows, cols, map_lev, map_obj, handle);
+	Player_View2(rows, cols, map_lev, map_obj, p, handle);
+	printf("HP: %i", p.hp);
 }
 
 	//Основной процесс игры
@@ -652,13 +644,15 @@ void Game_Process(int &rows, int &cols, player p, char map_lev[N][N], char map_o
 	{
 		PlayerTurn(p, map_obj);
 		Refresh(rows, cols, p, map_lev, map_obj, map_fog, handle);
-		printf("%i", p.hp);
-		Sleep(2000);
+		Sleep(1000);
 		EnemyTurn(p, map_obj, mas, total);
 		Refresh(rows, cols, p, map_lev, map_obj, map_fog, handle);
 		//Sleep(1000);
 		//Show_Level(rows, cols, map_lev, map_obj, handle);
-	} while (true);
+	} while (p.hp > 0);
+	system("cls");
+	printf("\n\n\n\n\t\t\t Вы проиграли \n\t\t\t");
+
 }
 
 bool IsFree(char map_obj[N][N],  int x, int y)
@@ -689,7 +683,7 @@ void EnemyTurn(player& player, char map[N][N], Enemy mas[], int total)
 	return;
 }
 
-    bool PlayerDetected(player player, char map[N][N], Enemy mas[], int i)
+bool PlayerDetected(player player, char map[N][N], Enemy mas[], int i)
 	{
 		if (PlayerInVision_UP(player, map, mas, i, 4) || PlayerInVision_DOWN(player, map, mas, i, 4) || PlayerInVision_LEFT(player, map, mas, i, 4) || PlayerInVision_RIGHT(player, map, mas, i, 4))
 			return true;
@@ -698,8 +692,7 @@ void EnemyTurn(player& player, char map[N][N], Enemy mas[], int total)
 
 	}
 
-
-	bool PlayerInVision_UP(player player, char map[N][N], Enemy mas[], int i, int radius)
+bool PlayerInVision_UP(player player, char map[N][N], Enemy mas[], int i, int radius)
 	{
 		int x = mas[i].x;
 		int y = mas[i].y;
@@ -728,8 +721,7 @@ void EnemyTurn(player& player, char map[N][N], Enemy mas[], int total)
 		return false;
 	}
 
-
-	bool PlayerInVision_DOWN(player player, char map[N][N], Enemy mas[], int i, int radius)
+bool PlayerInVision_DOWN(player player, char map[N][N], Enemy mas[], int i, int radius)
 	{
 		int x = mas[i].x;
 		int y = mas[i].y;
@@ -758,8 +750,7 @@ void EnemyTurn(player& player, char map[N][N], Enemy mas[], int total)
 		return false;
 	}
 
-
-	bool PlayerInVision_LEFT(player player, char map[N][N], Enemy mas[], int i, int radius)
+bool PlayerInVision_LEFT(player player, char map[N][N], Enemy mas[], int i, int radius)
 	{
 		int x = mas[i].x;
 		int y = mas[i].y;
@@ -788,8 +779,7 @@ void EnemyTurn(player& player, char map[N][N], Enemy mas[], int total)
 		return false;
 	}
 
-
-	bool PlayerInVision_RIGHT(player player, char map[N][N], Enemy mas[], int i, int radius)
+bool PlayerInVision_RIGHT(player player, char map[N][N], Enemy mas[], int i, int radius)
 	{
 		int x = mas[i].x;
 		int y = mas[i].y;
@@ -818,40 +808,28 @@ void EnemyTurn(player& player, char map[N][N], Enemy mas[], int total)
 		return false;
 	}
 
-	void EnemyAction(player& player, char map[N][N], Enemy mas[], int i)
-	{
-		int dy = player.y - mas[i].y;
-		int dx = player.x - mas[i].x;
+void EnemyAction(player& player, char map[N][N], Enemy mas[], int i)
+{
+	int dy = player.y - mas[i].y;
+	int dx = player.x - mas[i].x;
 
-		if (dy > 0)
-		{
-			if (dx > 0)
-				switch (Randomize(1, 2))
-				{
-				case 1:
-					if (IsFree(map, mas[i].y + 1, mas[i].x))
-						if (IsPlayer(mas, map, i, player, mas[i].y + 1, mas[i].x))
-							return;
-						else
-						{
-							map[mas[i].y + 1][mas[i].x] = map[mas[i].y][mas[i].x];
-							map[mas[i].y][mas[i].x] = ' ';
-							mas[i].y++;
-							break;
-						}
+	if (dy > 0)
+	{
+		if (dx > 0)
+			switch (Randomize(1, 2))
+			{
+			case 1:
+				if (IsFree(map, mas[i].y + 1, mas[i].x))
+					if (IsPlayer(mas, map, i, player, mas[i].y + 1, mas[i].x))
+						return;
 					else
-						if (IsFree(map, mas[i].y, mas[i].x + 1))
-							if (IsPlayer(mas, map, i, player, mas[i].y, mas[i].x + 1))
-								return;
-							else
-							{
-								map[mas[i].y][mas[i].x + 1] = map[mas[i].y][mas[i].x];
-								map[mas[i].y][mas[i].x] = ' ';
-								mas[i].x++;
-								break;
-							}
-						else return;
-				case 2:
+					{
+						map[mas[i].y + 1][mas[i].x] = map[mas[i].y][mas[i].x];
+						map[mas[i].y][mas[i].x] = ' ';
+						mas[i].y++;
+						break;
+					}
+				else
 					if (IsFree(map, mas[i].y, mas[i].x + 1))
 						if (IsPlayer(mas, map, i, player, mas[i].y, mas[i].x + 1))
 							return;
@@ -862,23 +840,19 @@ void EnemyTurn(player& player, char map[N][N], Enemy mas[], int total)
 							mas[i].x++;
 							break;
 						}
+					else return;
+			case 2:
+				if (IsFree(map, mas[i].y, mas[i].x + 1))
+					if (IsPlayer(mas, map, i, player, mas[i].y, mas[i].x + 1))
+						return;
 					else
-						if (IsFree(map, mas[i].y + 1, mas[i].x))
-							if (IsPlayer(mas, map, i, player, mas[i].y + 1, mas[i].x))
-								return;
-							else
-							{
-								map[mas[i].y + 1][mas[i].x] = map[mas[i].y][mas[i].x];
-								map[mas[i].y][mas[i].x] = ' ';
-								mas[i].y++;
-								break;
-							}
-						else return;
-				}
-			if (dx < 0)
-				switch (Randomize(1, 2))
-				{
-				case 1:
+					{
+						map[mas[i].y][mas[i].x + 1] = map[mas[i].y][mas[i].x];
+						map[mas[i].y][mas[i].x] = ' ';
+						mas[i].x++;
+						break;
+					}
+				else
 					if (IsFree(map, mas[i].y + 1, mas[i].x))
 						if (IsPlayer(mas, map, i, player, mas[i].y + 1, mas[i].x))
 							return;
@@ -889,19 +863,23 @@ void EnemyTurn(player& player, char map[N][N], Enemy mas[], int total)
 							mas[i].y++;
 							break;
 						}
+					else return;
+			}
+		if (dx < 0)
+			switch (Randomize(1, 2))
+			{
+			case 1:
+				if (IsFree(map, mas[i].y + 1, mas[i].x))
+					if (IsPlayer(mas, map, i, player, mas[i].y + 1, mas[i].x))
+						return;
 					else
-						if (IsFree(map, mas[i].y, mas[i].x - 1))
-							if (IsPlayer(mas, map, i, player, mas[i].y, mas[i].x - 1))
-								return;
-							else
-							{
-								map[mas[i].y][mas[i].x - 1] = map[mas[i].y][mas[i].x];
-								map[mas[i].y][mas[i].x] = ' ';
-								mas[i].x--;
-								break;
-							}
-						else return;
-				case 2:
+					{
+						map[mas[i].y + 1][mas[i].x] = map[mas[i].y][mas[i].x];
+						map[mas[i].y][mas[i].x] = ' ';
+						mas[i].y++;
+						break;
+					}
+				else
 					if (IsFree(map, mas[i].y, mas[i].x - 1))
 						if (IsPlayer(mas, map, i, player, mas[i].y, mas[i].x - 1))
 							return;
@@ -912,58 +890,58 @@ void EnemyTurn(player& player, char map[N][N], Enemy mas[], int total)
 							mas[i].x--;
 							break;
 						}
+					else return;
+			case 2:
+				if (IsFree(map, mas[i].y, mas[i].x - 1))
+					if (IsPlayer(mas, map, i, player, mas[i].y, mas[i].x - 1))
+						return;
 					else
-						if (IsFree(map, mas[i].y + 1, mas[i].x))
-							if (IsPlayer(mas, map, i, player, mas[i].y + 1, mas[i].x))
-								return;
-							else
-							{
-								map[mas[i].y + 1][mas[i].x] = map[mas[i].y][mas[i].x];
-								map[mas[i].y][mas[i].x] = ' ';
-								mas[i].y++;
-								break;
-							}
-						else return;
-				}
-			if (dx == 0)
-				if (IsPlayer(mas, map, i, player, mas[i].y + 1, mas[i].x))
-					return;
+					{
+						map[mas[i].y][mas[i].x - 1] = map[mas[i].y][mas[i].x];
+						map[mas[i].y][mas[i].x] = ' ';
+						mas[i].x--;
+						break;
+					}
 				else
-				{
-					map[mas[i].y + 1][mas[i].x] = map[mas[i].y][mas[i].x];
-					map[mas[i].y][mas[i].x] = ' ';
-					mas[i].y++;
-				}
-		}
-		if (dy < 0)
-		{
-			if (dx > 0)
-				switch (Randomize(1, 2))
-				{
-				case 1:
-					if (IsFree(map, mas[i].y - 1, mas[i].x))
-						if (IsPlayer(mas, map, i, player, mas[i].y - 1, mas[i].x))
+					if (IsFree(map, mas[i].y + 1, mas[i].x))
+						if (IsPlayer(mas, map, i, player, mas[i].y + 1, mas[i].x))
 							return;
 						else
 						{
-							map[mas[i].y - 1][mas[i].x] = map[mas[i].y][mas[i].x];
+							map[mas[i].y + 1][mas[i].x] = map[mas[i].y][mas[i].x];
 							map[mas[i].y][mas[i].x] = ' ';
-							mas[i].y--;
+							mas[i].y++;
 							break;
 						}
+					else return;
+			}
+		if (dx == 0)
+			if (IsPlayer(mas, map, i, player, mas[i].y + 1, mas[i].x))
+				return;
+			else
+			{
+				map[mas[i].y + 1][mas[i].x] = map[mas[i].y][mas[i].x];
+				map[mas[i].y][mas[i].x] = ' ';
+				mas[i].y++;
+			}
+	}
+	if (dy < 0)
+	{
+		if (dx > 0)
+			switch (Randomize(1, 2))
+			{
+			case 1:
+				if (IsFree(map, mas[i].y - 1, mas[i].x))
+					if (IsPlayer(mas, map, i, player, mas[i].y - 1, mas[i].x))
+						return;
 					else
-						if (IsFree(map, mas[i].y, mas[i].x + 1))
-							if (IsPlayer(mas, map, i, player, mas[i].y, mas[i].x + 1))
-								return;
-							else
-							{
-								map[mas[i].y][mas[i].x + 1] = map[mas[i].y][mas[i].x];
-								map[mas[i].y][mas[i].x] = ' ';
-								mas[i].x++;
-								break;
-							}
-						else return;
-				case 2:
+					{
+						map[mas[i].y - 1][mas[i].x] = map[mas[i].y][mas[i].x];
+						map[mas[i].y][mas[i].x] = ' ';
+						mas[i].y--;
+						break;
+					}
+				else
 					if (IsFree(map, mas[i].y, mas[i].x + 1))
 						if (IsPlayer(mas, map, i, player, mas[i].y, mas[i].x + 1))
 							return;
@@ -974,23 +952,19 @@ void EnemyTurn(player& player, char map[N][N], Enemy mas[], int total)
 							mas[i].x++;
 							break;
 						}
+					else return;
+			case 2:
+				if (IsFree(map, mas[i].y, mas[i].x + 1))
+					if (IsPlayer(mas, map, i, player, mas[i].y, mas[i].x + 1))
+						return;
 					else
-						if (IsFree(map, mas[i].y - 1, mas[i].x))
-							if (IsPlayer(mas, map, i, player, mas[i].y - 1, mas[i].x))
-								return;
-							else
-							{
-								map[mas[i].y - 1][mas[i].x] = map[mas[i].y][mas[i].x];
-								map[mas[i].y][mas[i].x] = ' ';
-								mas[i].y--;
-								break;
-							}
-						else return;
-				}
-			if (dx < 0)
-				switch (Randomize(1, 2))
-				{
-				case 1:
+					{
+						map[mas[i].y][mas[i].x + 1] = map[mas[i].y][mas[i].x];
+						map[mas[i].y][mas[i].x] = ' ';
+						mas[i].x++;
+						break;
+					}
+				else
 					if (IsFree(map, mas[i].y - 1, mas[i].x))
 						if (IsPlayer(mas, map, i, player, mas[i].y - 1, mas[i].x))
 							return;
@@ -1001,19 +975,23 @@ void EnemyTurn(player& player, char map[N][N], Enemy mas[], int total)
 							mas[i].y--;
 							break;
 						}
+					else return;
+			}
+		if (dx < 0)
+			switch (Randomize(1, 2))
+			{
+			case 1:
+				if (IsFree(map, mas[i].y - 1, mas[i].x))
+					if (IsPlayer(mas, map, i, player, mas[i].y - 1, mas[i].x))
+						return;
 					else
-						if (IsFree(map, mas[i].y, mas[i].x - 1))
-							if (IsPlayer(mas, map, i, player, mas[i].y, mas[i].x - 1))
-								return;
-							else
-							{
-								map[mas[i].y][mas[i].x - 1] = map[mas[i].y][mas[i].x];
-								map[mas[i].y][mas[i].x] = ' ';
-								mas[i].x--;
-								break;
-							}
-						else return;
-				case 2:
+					{
+						map[mas[i].y - 1][mas[i].x] = map[mas[i].y][mas[i].x];
+						map[mas[i].y][mas[i].x] = ' ';
+						mas[i].y--;
+						break;
+					}
+				else
 					if (IsFree(map, mas[i].y, mas[i].x - 1))
 						if (IsPlayer(mas, map, i, player, mas[i].y, mas[i].x - 1))
 							return;
@@ -1024,45 +1002,257 @@ void EnemyTurn(player& player, char map[N][N], Enemy mas[], int total)
 							mas[i].x--;
 							break;
 						}
+					else return;
+			case 2:
+				if (IsFree(map, mas[i].y, mas[i].x - 1))
+					if (IsPlayer(mas, map, i, player, mas[i].y, mas[i].x - 1))
+						return;
 					else
-						if (IsFree(map, mas[i].y - 1, mas[i].x))
-							if (IsPlayer(mas, map, i, player, mas[i].y - 1, mas[i].x))
-								return;
-							else
-							{
-								map[mas[i].y - 1][mas[i].x] = map[mas[i].y][mas[i].x];
-								map[mas[i].y][mas[i].x] = ' ';
-								mas[i].y--;
-								break;
-							}
-						else return;
-				}
-			if (dx == 0)
-				if (IsPlayer(mas, map, i, player, mas[i].y - 1, mas[i].x))
-					return;
+					{
+						map[mas[i].y][mas[i].x - 1] = map[mas[i].y][mas[i].x];
+						map[mas[i].y][mas[i].x] = ' ';
+						mas[i].x--;
+						break;
+					}
 				else
+					if (IsFree(map, mas[i].y - 1, mas[i].x))
+						if (IsPlayer(mas, map, i, player, mas[i].y - 1, mas[i].x))
+							return;
+						else
+						{
+							map[mas[i].y - 1][mas[i].x] = map[mas[i].y][mas[i].x];
+							map[mas[i].y][mas[i].x] = ' ';
+							mas[i].y--;
+							break;
+						}
+					else return;
+			}
+		if (dx == 0)
+			if (IsPlayer(mas, map, i, player, mas[i].y - 1, mas[i].x))
+				return;
+			else
+			{
+				if (IsFree(map, mas[i].y - 1, mas[i].x))
 				{
 					map[mas[i].y - 1][mas[i].x] = map[mas[i].y][mas[i].x];
 					map[mas[i].y][mas[i].x] = ' ';
 					mas[i].y--;
 				}
-		}
-		if (dy == 0 && dx > 0)
-			if (IsPlayer(mas, map, i, player, mas[i].y, mas[i].x + 1))
-				return;
-			else
-			{
-				map[mas[i].y][mas[i].x + 1] = map[mas[i].y][mas[i].x];
-				map[mas[i].y][mas[i].x] = ' ';
-				mas[i].x++;
 			}
-		if (dy == 0 && dx < 0)
-			if (IsPlayer(mas, map, i, player, mas[i].y, mas[i].x - 1))
-				return;
-			else
+	}
+	if (dy == 0 && dx > 0)
+		if (IsPlayer(mas, map, i, player, mas[i].y, mas[i].x + 1))
+			return;
+		else
+		{
+			if (IsFree(map, mas[i].y, mas[i].x +1 ))
+			{
+			map[mas[i].y][mas[i].x + 1] = map[mas[i].y][mas[i].x];
+			map[mas[i].y][mas[i].x] = ' ';
+			mas[i].x++;
+			}
+		}
+	if (dy == 0 && dx < 0)
+		if (IsPlayer(mas, map, i, player, mas[i].y, mas[i].x - 1))
+			return;
+		else
+		{
+			if (IsFree(map, mas[i].y, mas[i].x - 1))
 			{
 				map[mas[i].y][mas[i].x - 1] = map[mas[i].y][mas[i].x];
 				map[mas[i].y][mas[i].x] = ' ';
 				mas[i].x--;
 			}
+		}
+}
+
+	//Функция записи общей геометрии карты *Для тестов
+void TestWrite(int rows, int cols, char map_lev[N][N], char name[])
+	{
+		FILE* TestLev;
+		if (fopen_s(&TestLev, name, "w+") != 0)
+		{
+			printf("ERROR");
+			system("pause");
+			exit(1);
+		}
+		fprintf(TestLev, "%i\n", rows + 1);
+		fprintf(TestLev, "%i\n", cols);
+		for (int i = 0; i<rows; i++)
+		{
+			for (int j = 0; j<cols; j++)
+				fprintf(TestLev, "%c", map_lev[i][j]);
+			fprintf(TestLev, "\n");
+		}
+		fclose(TestLev);
 	}
+
+	//Функция загрузки карты *В разработке
+void TestRead(int &rows, int &cols, char map_lev[N][N], char name[])
+	{
+		FILE* TestLev;
+		if (fopen_s(&TestLev, name, "r+") != 0)
+		{
+			printf("ERROR");
+			system("pause");
+			exit(1);
+		}
+		fscanf_s(TestLev, "%i", &rows);
+		fscanf_s(TestLev, "%i\r", &cols);
+		for (int i = 0; i < rows; i++)
+		{
+			for (int j = 0; j < cols; j++)
+				fscanf_s(TestLev, "%c", &map_lev[i][j]);
+		}
+		fclose(TestLev);
+	}
+
+	//Функция выведения палитры цветов *Для тестов
+void color()
+	{
+		HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+		for (int k = 1; k < 255; k++)
+		{
+			SetConsoleTextAttribute(hConsole, k);
+			printf("Цвет = %i", k);
+			SetConsoleTextAttribute(hConsole, 15);
+			printf("\n");
+		}
+	}
+
+void Player_View2(int rows, int cols, char map_lev[N][N], char map_obj[N][N], player p, HANDLE handle)
+{
+	setcur(0, 0);
+	int a, b;
+	if (p.y - 2 < 0)
+	{
+		a = 0;
+		b = p.y + +2;
+	}
+	else if (p.y + 2 >= rows)
+	{
+		a = p.y - 2;
+		b = rows;
+	}
+	else
+	{
+		a = p.y - 2;
+		b = p.y + 2;
+	}
+
+	int c, d;
+	if (p.x - 3 <0)
+	{
+		c = 0;
+		d = p.x + 2;
+	}
+	else if (p.x + 3 >= cols)
+	{
+		c = p.x - 2;
+		d = cols - 1;
+	}
+	else
+	{
+		c = p.x - 2;
+		d = p.x + 2;
+	}
+	
+	int i, j, n = c-d+1;
+	int center = (a+b)/2;
+	for (i = c; i < b; i++)
+	{
+		for (j = c; j < d; j++)
+		{
+			if (i <= center)
+			{
+				// Верхняя половина ромба
+				if (j  >= center - i && j <= center + i)
+					Print_Map(i, j, map_lev, map_obj, handle);
+				else
+					printf("#");
+			}
+			else
+			{
+				// Нижняя половина ромба
+				if (j >= center + i - n + 1 && j <= center - i + n - 1)
+					Print_Map(i, j, map_lev, map_obj, handle);
+				else
+					printf("#");
+			}
+		}
+	printf("\n");
+}
+}
+
+void Print_Map(int i, int j, char map_lev[N][N], char map_obj[N][N], HANDLE handle)
+{
+	switch (map_obj[i][j])
+	{
+	case '\n':
+		printf("\n");
+		break;
+	case 'K':
+		SetConsoleTextAttribute(handle, 14);
+		printf("K");
+		break;
+	case 'P':
+		SetConsoleTextAttribute(handle, 15);
+		printf("@");
+		break;
+	case 'C':
+		SetConsoleTextAttribute(handle, 14);
+		printf("D");
+		break;
+	case '1':
+		SetConsoleTextAttribute(handle, 12);
+		printf("§");
+		break;
+	case '2':
+		SetConsoleTextAttribute(handle, 13);
+		printf("¤");
+		break;
+	case ' ':
+		switch (map_lev[i][j])
+		{//Если в массиве объектов пробел то 
+		 //Выводим символ из массива геометрии уровня
+		 //Через эти символы у игрока есть возможность передвигаться
+		case' ':
+			SetConsoleTextAttribute(handle, 8);
+			printf(".");
+			break;
+		case '¶':
+			SetConsoleTextAttribute(handle, 2);
+			printf("%c", map_lev[i][j]);
+			break;
+		case 'D':
+			SetConsoleTextAttribute(handle, 15);
+			printf("%c", map_lev[i][j]);
+			break;
+		}
+		break;
+	case 'W':
+		switch (map_lev[i][j])
+		{
+			//Если в массиве объектов 'W' то 
+			//Выводим символ из массива геометрии уровня
+			//Через эти символы у игрока нету возможности передвигаться
+		case '^':
+			SetConsoleTextAttribute(handle, 7);
+			printf("%c", map_lev[i][j]);
+			break;
+		case '~':
+			SetConsoleTextAttribute(handle, 159);
+			printf("%c", map_lev[i][j]);
+			break;
+		case ' ':
+			SetConsoleTextAttribute(handle, 15);
+			printf("#");
+			break;
+		default:
+			SetConsoleTextAttribute(handle, 15);
+			printf("%c", map_lev[i][j]);
+			break;
+		}
+		break;
+	}
+}
