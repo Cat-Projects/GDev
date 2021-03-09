@@ -1,10 +1,16 @@
+#define _CRT_SECURE_NO_WARNINGS
 #include <iostream>
 #include <conio.h>
 #include <Windows.h>
 #define N 256
-enum {up = 72, down = 80, left = 75, right = 77, use};
+enum {up = 72, down = 80, left = 75, right = 77, ex =27};
 struct player { int x, y, hp, key; };
 struct Enemy { int x, y, damage; bool death; };
+int rows, cols;
+char map_lev[N][N];
+char map_obj[N][N];
+char map_fog[N][N];
+HANDLE handle = GetStdHandle(STD_OUTPUT_HANDLE);
 
 void Player_View(int &rows, int &cols, char map_lev[N][N], char map_obj[N][N], char map_fog[N][N], HANDLE handle);
 void Show_Level(int &rows, int &cols, char map_lev[N][N], char map_obj[N][N], HANDLE handle);
@@ -20,7 +26,7 @@ void Read_Fog(int rows, int cols, char map_fog[N][N], char name[]);
 void Fog_Change(int rows, int cols, player p, char map_fog[N][N]);
 void Main_Menu(int &rows, int &cols, player &p, char map_lev[N][N], char map_obj[N][N], char map_fog[N][N], Enemy mas[], int &total);
 void Level_Load(int &rows, int &cols, player &p, char map_lev[N][N], char map_obj[N][N], char map_fog[N][N], Enemy mas[], int& total);
-void Refresh(int &rows, int &cols, player p, char map_lev[N][N], char map_obj[N][N], char map_fog[N][N], HANDLE handle);
+void Refresh(int &rows, int &cols, player p, char map_lev[N][N], char map_obj[N][N], char map_fog[N][N], HANDLE handle, bool player_attacked = 0);
 void Game_Process(int &rows, int &cols, player p, char map_lev[N][N], char map_obj[N][N], char map_fog[N][N], HANDLE handle, Enemy mas[], int total);
 bool PlayerDetected(player player, char map[N][N], Enemy mas[], int i);
 void EnemyAction(player& player, char map[N][N], Enemy mas[], int i);
@@ -33,8 +39,8 @@ bool IsFree(char map_obj[N][N], int x, int y);
 int Level_Choice();
 void Print_Name();
 void Print_Menu();
-void Print_Map(int i, int j, char map_lev[N][N], char map_obj[N][N], HANDLE handle);
-void Player_View2(int rows, int cols, char map_lev[N][N], char map_obj[N][N], player p, HANDLE handle);
+void Print_Map(int i, int j, char map_lev[N][N], char map_obj[N][N], HANDLE handle, bool player_attacked = 0);
+void Player_View2(int rows, int cols, char map_lev[N][N], char map_obj[N][N], player p, HANDLE handle, bool player_attacked = 0);
 
 
 
@@ -45,16 +51,27 @@ int main()
 	p.x = 16; p.y = 25; p.key = 0; p.hp = 3;
 	Enemy mas[N];
 	int total = 0;
-	HANDLE handle = GetStdHandle(STD_OUTPUT_HANDLE);
+	CONSOLE_FONT_INFOEX fontInfo;
 
-	int rows, cols;
-	char map_lev[N][N];
-	char map_obj[N][N];
-	char map_fog[N][N];
+	fontInfo.cbSize = sizeof(fontInfo);
+
+	GetCurrentConsoleFontEx(handle, TRUE, &fontInfo);
+
+
+	wcscpy(fontInfo.FaceName, L"Lucida Console");
+
+	fontInfo.dwFontSize.Y = 17;
+	SetCurrentConsoleFontEx(handle, TRUE, &fontInfo);
+
+	SetConsoleDisplayMode(handle, CONSOLE_FULLSCREEN_MODE, NULL);
+
+
 	do
 	{
 		system("cls");
 		Main_Menu(rows, cols, p, map_lev, map_obj, map_fog, mas, total);
+		fontInfo.dwFontSize.Y = 26;
+		SetCurrentConsoleFontEx(handle, TRUE, &fontInfo);
 		system("cls");
 		//printf("%i %i . %i %i", mas[0].x, mas[0].y, mas[total - 1].x, mas[total - 1].y);
 		//system("pause");
@@ -340,7 +357,8 @@ void CheckP(player &p, char map_obj[N][N], int mov)
 				break;
 			}
 			break;
-		case use:
+		case ex:
+			exit(0);
 			break;
 	}
 }
@@ -358,7 +376,7 @@ void PlayerTurn(player &p, char map_obj[N][N])
 	{
 		int n = _getch();
 		int act = _getch();
-		if (act == 72 || act == 80 || act == 75 || act == 77)
+		if (act == 72 || act == 80 || act == 75 || act == 77 || act == 27)
 		{
 			CheckP(p, map_obj, act);
 			return;
@@ -630,10 +648,10 @@ void Main_Menu(int &rows, int &cols, player &p, char map_lev[N][N], char map_obj
 }
 	
 	//Обновление экрана игрока
-void Refresh(int &rows, int&cols, player p, char map_lev[N][N], char map_obj[N][N], char map_fog[N][N], HANDLE handle)
+void Refresh(int &rows, int&cols, player p, char map_lev[N][N], char map_obj[N][N], char map_fog[N][N], HANDLE handle, bool player_attacked)
 {
 	//Show_Level(rows, cols, map_lev, map_obj, handle);
-	Player_View2(rows, cols, map_lev, map_obj, p, handle);
+	Player_View2(rows, cols, map_lev, map_obj, p, handle, player_attacked);
 	printf("HP: %i", p.hp);
 }
 
@@ -666,6 +684,8 @@ bool IsPlayer(Enemy mas[], char map[N][N], int i, player& player, int a, int b)
 	if (map[a][b] == 'P')
 	{
 		player.hp -= mas[i].damage;
+		Refresh(rows, cols, player, map_lev, map_obj, map_fog, handle, TRUE);
+		Sleep(1000);
 		return true;
 	}
 	return false;
@@ -1120,71 +1140,88 @@ void color()
 		}
 	}
 
-void Player_View2(int rows, int cols, char map_lev[N][N], char map_obj[N][N], player p, HANDLE handle)
+void Player_View2(int rows, int cols, char map_lev[N][N], char map_obj[N][N], player p, HANDLE handle, bool player_attacked )
 {
 	setcur(0, 0);
 	int a, b;
 	if (p.y - 2 < 0)
 	{
 		a = 0;
-		b = p.y + +2;
+		b = p.y +5;
 	}
 	else if (p.y + 2 >= rows)
 	{
-		a = p.y - 2;
+		a = p.y - 4;
 		b = rows;
 	}
 	else
 	{
-		a = p.y - 2;
-		b = p.y + 2;
+		a = p.y - 4;
+		b = p.y + 5;
 	}
 
 	int c, d;
 	if (p.x - 3 <0)
 	{
 		c = 0;
-		d = p.x + 2;
+		d = p.x + 5;
 	}
 	else if (p.x + 3 >= cols)
 	{
-		c = p.x - 2;
+		c = p.x - 4;
 		d = cols - 1;
 	}
 	else
 	{
-		c = p.x - 2;
-		d = p.x + 2;
+		c = p.x - 4;
+		d = p.x + 5;
 	}
 	
-	int i, j, n = c-d+1;
-	int center = (a+b)/2;
-	for (i = c; i < b; i++)
+	int i, j, n = 0;
+	int center_y = (a + b) / 2;
+	int center_x = (c + d) / 2;
+	for (i = a; i < b; i++)
 	{
-		for (j = c; j < d; j++)
+		printf("\t\t\t\t");
+		if (i <= center_y)
 		{
-			if (i <= center)
+			for (j = c; j < d; j++)
 			{
+
 				// Верхняя половина ромба
-				if (j  >= center - i && j <= center + i)
-					Print_Map(i, j, map_lev, map_obj, handle);
+				if (j >= center_x + n && j <= center_x - n)
+				{
+					Print_Map(i, j, map_lev, map_obj, handle, player_attacked);
+					SetConsoleTextAttribute(handle, 15);
+				}
 				else
-					printf("#");
+					printf(" ");
 			}
+			printf("\n");
+			n--;
+		}
 			else
 			{
-				// Нижняя половина ромба
-				if (j >= center + i - n + 1 && j <= center - i + n - 1)
-					Print_Map(i, j, map_lev, map_obj, handle);
-				else
-					printf("#");
+				n++;
+				for (j = c; j < d; j++)
+				{
+					// Нижняя половина ромба
+					if (j >= center_x + n + 1 && j <= center_x - n - 1 )
+					{
+						Print_Map(i, j, map_lev, map_obj, handle);
+						SetConsoleTextAttribute(handle, 15);
+					}
+					else
+						printf(" ");
+				}
+				printf("\n");
+				
 			}
 		}
 	printf("\n");
 }
-}
 
-void Print_Map(int i, int j, char map_lev[N][N], char map_obj[N][N], HANDLE handle)
+void Print_Map(int i, int j, char map_lev[N][N], char map_obj[N][N], HANDLE handle, bool player_attacked )
 {
 	switch (map_obj[i][j])
 	{
@@ -1197,7 +1234,10 @@ void Print_Map(int i, int j, char map_lev[N][N], char map_obj[N][N], HANDLE hand
 		break;
 	case 'P':
 		SetConsoleTextAttribute(handle, 15);
-		printf("@");
+		if (player_attacked)
+			printf("/");
+		else
+			printf("@");
 		break;
 	case 'C':
 		SetConsoleTextAttribute(handle, 14);
