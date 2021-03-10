@@ -6,14 +6,15 @@
 enum {up = 72, down = 80, left = 75, right = 77, ex =27};
 struct player
 {
-	int x, y, hp, key;
+	int x, y, hp, max_hp = 3, key;
 	int gold;
-	bool emp0, emp1, emp2, emp3;                              // emp0 - обычная атака(удар на одну выбранную клеку, emp1 - двойной удар(удар на выбранную клетку и симметричную ей, относительно игрока)
+	bool emp0 = 1, emp1 = 0, emp2 = 0, emp3 = 1;                              // emp0 - обычная атака(удар на одну выбранную клеку, emp1 - двойной удар(удар на выбранную клетку и симметричную ей, относительно игрока)
 	bool attacked;
 };                                                        // emp2 - длинный удар(удар на клетку и следующую за ней), emp3 - широкий удар (удар на клетку и побокам от нее, относительно игрока);
 
 struct Enemy { int x, y, damage; bool death; };
 
+bool load = 1;
 int rows, cols;
 char map_lev[N][N];
 char map_obj[N][N];
@@ -24,18 +25,18 @@ void Player_View(int &rows, int &cols, char map_lev[N][N], char map_obj[N][N], c
 void Show_Level(int &rows, int &cols, char map_lev[N][N], char map_obj[N][N], HANDLE handle);
 void TestWrite(int rows, int cols, char map_lev[N][N], char name[]);
 void TestRead(int &rows, int &cols, char map_lev[N][N], char name[]);
-void CheckP(player &p, char map_obj[N][N], int mov);
-void PlayerTurn(player &p, char map_obj[N][N], Enemy mas[], int total);
+void CheckP(player &p, char map_obj[N][N], int mov, Enemy mas[], int total, int &next_lev);
+void PlayerTurn(player &p, char map_obj[N][N], Enemy mas[], int total, int &next_lev);
 void color();
 void setcur(int x, int y);
 void Read_Lev(int &rows, int &cols, char map_lev[N][N], char name[]);
 void Read_Obj(int rows, int cols, player &p, char map_obj[N][N], char name[]);
 void Read_Fog(int rows, int cols, char map_fog[N][N], char name[]);
 void Fog_Change(int rows, int cols, player p, char map_fog[N][N]);
-void Main_Menu(int &rows, int &cols, player &p, char map_lev[N][N], char map_obj[N][N], char map_fog[N][N], Enemy mas[], int &total);
+void Main_Menu(int &rows, int &cols, player &p, char map_lev[N][N], char map_obj[N][N], char map_fog[N][N], Enemy mas[], int &total, int &next_lev);
 void Level_Load(int &rows, int &cols, player &p, char map_lev[N][N], char map_obj[N][N], char map_fog[N][N], Enemy mas[], int& total);
 void Refresh(int &rows, int &cols, player p, char map_lev[N][N], char map_obj[N][N], char map_fog[N][N], HANDLE handle);
-void Game_Process(int &rows, int &cols, player p, char map_lev[N][N], char map_obj[N][N], char map_fog[N][N], HANDLE handle, Enemy mas[], int total);
+void Game_Process(int &rows, int &cols, player p, char map_lev[N][N], char map_obj[N][N], char map_fog[N][N], HANDLE handle, Enemy mas[], int total, int &next_lev);
 bool PlayerDetected(player player, char map[N][N], Enemy mas[], int i);
 void EnemyAction(player& player, char map[N][N], Enemy mas[], int i);
 bool PlayerInVision_UP(player player, char map[N][N], Enemy mas[], int i, int radius);
@@ -53,12 +54,21 @@ void Input_Enemy(int rows, int cols, char map_obj[N][N], Enemy mas[], int& total
 void Attack(player& p, char map[N][N], int act, Enemy mas[], int total);
 void DamageV(player &p, char map[N][N], int y, int x, Enemy mas[], int total);
 void DamageG(player &p, char map[N][N], int y, int x, Enemy mas[], int total);
+void View_emp0(int &rows, int &cols, char map_lev[N][N], char map_obj[N][N], char map_fog[N][N], HANDLE handle, int y, int x);
+void View_emp1G(int &rows, int &cols, char map_lev[N][N], char map_obj[N][N], char map_fog[N][N], HANDLE handle, int y, int x, player p);
+void View_emp2G(int &rows, int &cols, char map_lev[N][N], char map_obj[N][N], char map_fog[N][N], HANDLE handle, int y, int x, player p);
+void View_emp3G(int &rows, int &cols, char map_lev[N][N], char map_obj[N][N], char map_fog[N][N], HANDLE handle, int y, int x);
+void View_emp1V(int &rows, int &cols, char map_lev[N][N], char map_obj[N][N], char map_fog[N][N], HANDLE handle, int y, int x, player p);
+void View_emp2V(int &rows, int &cols, char map_lev[N][N], char map_obj[N][N], char map_fog[N][N], HANDLE handle, int y, int x, player p);
+void View_emp3V(int &rows, int &cols, char map_lev[N][N], char map_obj[N][N], char map_fog[N][N], HANDLE handle, int y, int x);
+void Load_Next_Lev(int &rows, int &cols, player &p, int &next_lev, char map_lev[N][N], char map_obj[N][N], char map_fog[N][N], Enemy mas[], int& total);
+void Shop(player& p);
 
 int main()
 {
 	system("chcp 1251");
 	player p;
-	p.x = 16; p.y = 25; p.key = 0; p.hp = 3; p.gold = 0;
+	p.x = 16; p.y = 25; p.key = 0; p.hp = 3; p.gold = 0; p.attacked =0;
 	Enemy mas[N];
 	int total = 0;
 	CONSOLE_FONT_INFOEX fontInfo;
@@ -78,20 +88,22 @@ int main()
 
 	do
 	{
+		int next_lev;
 		system("cls");
-		Main_Menu(rows, cols, p, map_lev, map_obj, map_fog, mas, total);
+		Main_Menu(rows, cols, p, map_lev, map_obj, map_fog, mas, total, next_lev);
 		//fontInfo.dwFontSize.Y = 26; *Раскомить для Player_View2
 		//SetCurrentConsoleFontEx(handle, TRUE, &fontInfo); *Раскомить для Player_View2
 		system("cls");
 		//printf("%i %i . %i %i", mas[0].x, mas[0].y, mas[total - 1].x, mas[total - 1].y); 
 		//system("pause");
 		Refresh(rows, cols, p, map_lev, map_obj, map_fog, handle);
-		Game_Process(rows, cols, p, map_lev, map_obj, map_fog, handle, mas, total);
+		Game_Process(rows, cols, p, map_lev, map_obj, map_fog, handle, mas, total, next_lev);
 		system("pause");
 	} while (true);
 	return 0;
 }
-	//Функция отображения карты *В разработке
+	
+//Функция отображения карты *В разработке
 void Player_View(int &rows, int &cols, char map_lev[N][N], char map_obj[N][N], char map_fog[N][N], HANDLE handle, bool player_attacked)
 {
 	setcur(0, 0);
@@ -113,13 +125,24 @@ void Player_View(int &rows, int &cols, char map_lev[N][N], char map_obj[N][N], c
 			case '1':
 			switch (map_obj[i][j])
 			{
+			case 'S':
+				SetConsoleTextAttribute(handle, 14);
+				printf("$");
+				break;
+			case 'E':
+				SetConsoleTextAttribute(handle, 15);
+				printf("D");
+				break;
 			case 'K':
 				SetConsoleTextAttribute(handle, 14);
 				printf("K");
 				break;
 			case 'P':
 				SetConsoleTextAttribute(handle, 15);
-				printf("@");
+				if (player_attacked)
+					printf("/");
+				else
+					printf("@");
 				break;
 			case 'C':
 				SetConsoleTextAttribute(handle, 14);
@@ -279,13 +302,20 @@ void setcur(int x, int y)
 };
 
 	//Передвежение игрока и взаимодействие с предметами
-void CheckP(player &p, char map_obj[N][N], int mov)
+void CheckP(player &p, char map_obj[N][N], int mov, Enemy mas[], int total, int &next_lev)
 {
 	switch (mov)
 	{
 		case up:
 			switch(map_obj[p.y - 1][p.x])
 			{
+			case 'S':
+				Shop(p);
+				break;
+			case 'E':
+				Load_Next_Lev(rows, cols, p, next_lev, map_lev, map_obj, map_fog, mas, total);
+				load = 1;
+				break;
 			case ' ':
 				map_obj[p.y - 1][p.x] = 'P';
 				map_obj[p.y][p.x] = ' ';
@@ -307,6 +337,13 @@ void CheckP(player &p, char map_obj[N][N], int mov)
 		case down:
 			switch (map_obj[p.y + 1][p.x])
 			{
+			case 'S':
+				Shop(p);
+				break;
+			case 'E':
+				Load_Next_Lev(rows, cols, p, next_lev, map_lev, map_obj, map_fog, mas, total);
+				load = 1;
+				break;
 			case ' ':
 				map_obj[p.y + 1][p.x] = 'P';
 				map_obj[p.y][p.x] = ' ';
@@ -328,6 +365,13 @@ void CheckP(player &p, char map_obj[N][N], int mov)
 		case left:
 			switch (map_obj[p.y][p.x - 1])
 			{
+			case 'S':
+				Shop(p);
+				break;
+			case 'E':
+				Load_Next_Lev(rows, cols, p, next_lev, map_lev, map_obj, map_fog, mas, total);
+				load = 1;
+				break;
 			case ' ':
 				map_obj[p.y][p.x - 1] = 'P';
 				map_obj[p.y][p.x] = ' ';
@@ -349,6 +393,13 @@ void CheckP(player &p, char map_obj[N][N], int mov)
 		case right:
 			switch (map_obj[p.y][p.x + 1])
 			{
+			case 'S':
+				Shop(p);
+				break;
+			case 'E':
+				Load_Next_Lev(rows, cols, p, next_lev, map_lev, map_obj, map_fog, mas ,total);
+				load = 1;
+				break;
 			case ' ':
 				map_obj[p.y][p.x + 1] = 'P';
 				map_obj[p.y][p.x] = ' ';
@@ -380,7 +431,7 @@ int Randomize(int a, int b)
 }
 
 	//Функция ввода клавиши во время хода игрока
-void PlayerTurn(player &p, char map_obj[N][N], Enemy mas[], int total)
+void PlayerTurn(player &p, char map_obj[N][N], Enemy mas[], int total, int &next_lev)
 {
 	do
 	{
@@ -388,7 +439,7 @@ void PlayerTurn(player &p, char map_obj[N][N], Enemy mas[], int total)
 		int act = _getch();
 		if (act == 72 || act == 80 || act == 75 || act == 77 || act == 27)
 		{
-			CheckP(p, map_obj, act);
+			CheckP(p, map_obj, act, mas, total, next_lev);
 			return;
 		}
 		else if (act == 141 || act == 145 || act == 115 || act == 116)
@@ -550,11 +601,12 @@ void Input_Enemy(int rows, int cols, char map_obj[N][N], Enemy mas[], int& total
 	return;
 }
 
-void New_Game(int &rows, int &cols, player &p, char map_lev[N][N], char map_obj[N][N], char map_fog[N][N], Enemy mas[], int& total)
+void New_Game(int &rows, int &cols, player &p, char map_lev[N][N], char map_obj[N][N], char map_fog[N][N], Enemy mas[], int& total, int &next_lev)
 {
 	char name1[] = "Lev/Lev1.txt";
 	char name2[] = "Lev/Lev1_obj.txt";
 	char name3[] = "Lev/Lev1_fog.txt";
+	next_lev = 2;
 	Read_Lev(rows, cols, map_lev, name1);
 	Read_Obj(rows, cols, p, map_obj, name2);
 	Read_Fog(rows, cols, map_fog, name3);
@@ -595,7 +647,7 @@ void Print_Name()
 }
 
 	//Загрузка уровня
-void Level_Load(int &rows, int &cols, player &p, char map_lev[N][N], char map_obj[N][N], char map_fog[N][N], Enemy mas[], int& total)
+void Level_Load(int &rows, int &cols, player &p, char map_lev[N][N], char map_obj[N][N], char map_fog[N][N], Enemy mas[], int& total, int &next_lev)
 {
 	system("cls");
 	char name1[20] = "Lev";
@@ -608,16 +660,19 @@ void Level_Load(int &rows, int &cols, player &p, char map_lev[N][N], char map_ob
 		strcat_s(name1, "/Lev1.txt");
 		strcat_s(name2, "/Lev1_obj.txt");
 		strcat_s(name3, "/Lev1_fog.txt");
+		next_lev = 2;
 		break;
 	case 2:
 		strcat_s(name1, "/Lev2_v2.txt");
 		strcat_s(name2, "/Lev2_obj.txt");
 		strcat_s(name3, "/Lev2_fog.txt");
+		next_lev = 3;
 		break;
 	case 3:
 		strcat_s(name1, "/Lev3.txt");
 		strcat_s(name2, "/Lev3_obj.txt");
 		strcat_s(name3, "/Lev3_fog.txt");
+		next_lev = 4;
 		break;
 	}
 
@@ -627,7 +682,42 @@ void Level_Load(int &rows, int &cols, player &p, char map_lev[N][N], char map_ob
 	Input_Enemy(rows, cols, map_obj, mas, total);
 	return;
 }
+
+void Load_Next_Lev(int &rows, int &cols, player &p, int &next_lev, char map_lev[N][N], char map_obj[N][N], char map_fog[N][N], Enemy mas[], int& total)
+{
+	system("cls");
+	char name1[20] = "Lev";
+	char name2[20] = "Lev";
+	char name3[20] = "Lev";
+
+	if (next_lev == 2)
+	{
+		strcat_s(name1, "/Lev2_v2.txt");
+		strcat_s(name2, "/Lev2_obj.txt");
+		strcat_s(name3, "/Lev2_fog.txt");
+		next_lev = 3;
+	}
+		else if (next_lev == 3)
+		{
+
 	
+		strcat_s(name1, "/Lev3.txt");
+		strcat_s(name2, "/Lev3_obj.txt");
+		strcat_s(name3, "/Lev3_fog.txt");
+		next_lev = 4;
+		}
+	else{
+		printf("\n\n\t Поздравляем вы прошли всю игру!!!");
+		system("pause");
+		exit(0);
+	}
+
+	Read_Lev(rows, cols, map_lev, name1);
+	Read_Obj(rows, cols, p, map_obj, name2);
+	Read_Fog(rows, cols, map_fog, name3);
+	Input_Enemy(rows, cols, map_obj, mas, total);
+	return;
+}
 	//Выбор уровня
 int Level_Choice()
 {
@@ -651,7 +741,7 @@ int Level_Choice()
 }
 
 	//Главное меню игры
-void Main_Menu(int &rows, int &cols, player &p, char map_lev[N][N], char map_obj[N][N], char map_fog[N][N], Enemy mas[], int &total)
+void Main_Menu(int &rows, int &cols, player &p, char map_lev[N][N], char map_obj[N][N], char map_fog[N][N], Enemy mas[], int &total, int &next_lev)
 {
 	Print_Name();
 	Print_Menu();
@@ -663,11 +753,11 @@ void Main_Menu(int &rows, int &cols, player &p, char map_lev[N][N], char map_obj
 		switch (act)
 		{
 		case 49:
-			New_Game(rows, cols, p, map_lev, map_obj, map_fog, mas, total);
+			New_Game(rows, cols, p, map_lev, map_obj, map_fog, mas, total, next_lev);
 			check = 0;
 			break;
 		case 50:
-			Level_Load(rows, cols, p, map_lev, map_obj, map_fog, mas, total);
+			Level_Load(rows, cols, p, map_lev, map_obj, map_fog, mas, total, next_lev);
 			check = 0;
 			break;
 		//case 51:Титры
@@ -685,7 +775,7 @@ void Refresh(int &rows, int&cols, player p, char map_lev[N][N], char map_obj[N][
 	//Show_Level(rows, cols, map_lev, map_obj, handle);
 	Fog_Change(rows, cols, p, map_fog);
 	//system("cls"); *Раскомить для Player_View2
-	Player_View(rows, cols, map_lev, map_obj, map_fog, handle);
+	Player_View(rows, cols, map_lev, map_obj, map_fog, handle, p.attacked);
 	//Player_View2(rows, cols, map_lev, map_obj, p, handle); *Раскомить для Player_View2
 	//printf("\n>>>--------------------------------------------------------------------------<<<\n"); *Раскомить для Player_View2
 	//printf("    HP: %i \t\t\t\t\t\tKeys: %i     Gold: %i", p.hp, p.key, p.gold); *Раскомить для Player_View2
@@ -693,15 +783,20 @@ void Refresh(int &rows, int&cols, player p, char map_lev[N][N], char map_obj[N][
 }
 
 	//Основной процесс игры
-void Game_Process(int &rows, int &cols, player p, char map_lev[N][N], char map_obj[N][N], char map_fog[N][N], HANDLE handle, Enemy mas[], int total)
+void Game_Process(int &rows, int &cols, player p, char map_lev[N][N], char map_obj[N][N], char map_fog[N][N], HANDLE handle, Enemy mas[], int total, int &next_lev)
 {
 	do
 	{
-		PlayerTurn(p, map_obj, mas, total);
+		PlayerTurn(p, map_obj, mas, total, next_lev);
 		Refresh(rows, cols, p, map_lev, map_obj, map_fog, handle);
 		Sleep(1000);
-		EnemyTurn(p, map_obj, mas, total);
-		Refresh(rows, cols, p, map_lev, map_obj, map_fog, handle);
+		if (load)
+		{
+			EnemyTurn(p, map_obj, mas, total);
+			Refresh(rows, cols, p, map_lev, map_obj, map_fog, handle);
+		}
+		else
+			load = 0;
 		//Sleep(1000);
 		//Show_Level(rows, cols, map_lev, map_obj, handle);
 	} while (p.hp > 0);
@@ -1125,6 +1220,112 @@ void EnemyAction(player& player, char map[N][N], Enemy mas[], int i)
 		}
 }
 
+void Shop(player& p)
+{
+	int n;
+	int act;
+	do
+	{
+	system("cls");
+	printf("Hp = %i Max Hp = %i Gold = %i\n\n", p.hp, p.max_hp, p.gold);
+	printf(" 1 - Зелье восстановления - 15 Золотых\n 2 - Увеличение Максимального здорвья - 25 золотых\n 3 - Улучшение атаки 1 - 25 золотых\n 4 - Улучшение атаки 2 - 35 золотых\n 5 - Улучшение атаки 3 - 40 золотых\n Esc - Выход из магазина \n");
+	do
+	{
+		n = _getch();
+		act = _getch();
+		switch (act)
+		{
+		case 49:
+			if (p.gold >= 15)
+			{
+				if (p.hp < p.max_hp)
+				{
+					p.hp++;
+					p.gold -= 15;
+				}
+				else
+					printf("У вас максимальное количество здоровья\n");
+			}
+			else
+			{
+				printf("У вас не хватает золота чтобы купить этот предмет\n");
+			}
+			break;
+		case 50:
+			if (p.gold >= 25)
+			{
+				if (p.max_hp < 6)
+				{
+					p.max_hp++;
+					p.hp++;
+					p.gold -= 25;
+				}
+				else
+					printf("Вы не можете увеличить максимальное количество здоровья\n");
+			}
+			else
+			{
+				printf("У вас не хватает золота чтобы купить этот предмет\n");
+			}
+			break;
+		case 51:
+			if (p.gold >= 25)
+			{
+				if (p.emp1 == 0)
+				{
+					p.emp1 = 1;
+					p.emp2 = 0;
+					p.emp3 = 0;
+				}
+				else
+					printf("У вас уже есть это улучшение\n");
+			}
+			else
+			{
+				printf("У вас не хватает золота чтобы купить этот предмет\n");
+			}
+			break;
+		case 52:
+			if (p.gold >= 35)
+			{
+				if (p.emp2 == 0)
+				{
+					p.emp1 = 0;
+					p.emp2 = 1;
+					p.emp3 = 0;
+				}
+				else
+					printf("У вас уже есть это улучшение\n");
+			}
+			else
+			{
+				printf("У вас не хватает золота чтобы купить этот предмет\n");
+			}
+			break;
+		case 53:
+			if (p.gold >= 40)
+			{
+				if (p.emp3 == 0)
+				{
+					p.emp1 = 0;
+					p.emp2 = 0;
+					p.emp3 = 1;
+				}
+				else
+					printf("У вас уже есть это улучшение\n");
+			}
+			else
+			{
+				printf("У вас не хватает золота чтобы купить этот предмет\n");
+			}
+			break;
+		}
+	} while (act == 49 || act == 50 || act == 51 || act == 52 || act == 53);
+	
+	} while (act != 27);
+	system("cls");
+}
+
 	//Функция записи общей геометрии карты *Для тестов
 void TestWrite(int rows, int cols, char map_lev[N][N], char name[])
 	{
@@ -1355,6 +1556,8 @@ void Attack(player& p, char map[N][N], int act, Enemy mas[], int total)
 void DamageG(player &p, char map[N][N], int y, int x, Enemy mas[], int total)
 {
 	if (p.emp0)
+	{ 
+		View_emp0(rows, cols, map_lev, map_obj, map_fog, handle, y, x);
 		for (int i = 0; i < total; i++)
 			if (y == mas[i].y && x == mas[i].x)
 			{
@@ -1364,7 +1567,10 @@ void DamageG(player &p, char map[N][N], int y, int x, Enemy mas[], int total)
 				map[y][x] = ' ';
 				GetGold(p, mas, i);
 			}
+	}
 	if (p.emp1)
+	{
+		View_emp1G(rows, cols, map_lev, map_obj, map_fog, handle, y, x, p);
 		for (int i = 0; i < total; i++)
 		{
 			if (p.y == mas[i].y && p.x - 1 == mas[i].x)
@@ -1384,7 +1590,10 @@ void DamageG(player &p, char map[N][N], int y, int x, Enemy mas[], int total)
 				GetGold(p, mas, i);
 			}
 		}
+	}
 	if (p.emp2)
+	{
+		View_emp2G(rows, cols, map_lev, map_obj, map_fog, handle, y, x, p);
 		if (x + 1 == p.x)
 			for (int i = 0; i < total; i++)
 			{
@@ -1425,7 +1634,10 @@ void DamageG(player &p, char map[N][N], int y, int x, Enemy mas[], int total)
 					GetGold(p, mas, i);
 				}
 			}
+	}
 	if (p.emp3)
+	{
+		View_emp3G(rows, cols, map_lev, map_obj, map_fog, handle, y, x);
 		for (int i = 0; i < total; i++)
 		{
 			if (y == mas[i].y && x == mas[i].x)
@@ -1453,11 +1665,13 @@ void DamageG(player &p, char map[N][N], int y, int x, Enemy mas[], int total)
 				GetGold(p, mas, i);
 			}
 		}
+	}
 }
 
 void DamageV(player &p, char map[N][N], int y, int x, Enemy mas[], int total)
 {
-	if (p.emp0)
+	if (p.emp0){
+		View_emp0(rows, cols, map_lev, map_obj, map_fog, handle, y, x);
 		for (int i = 0; i < total; i++)
 			if (y == mas[i].y && x == mas[i].x)
 			{
@@ -1467,7 +1681,10 @@ void DamageV(player &p, char map[N][N], int y, int x, Enemy mas[], int total)
 				map[y][x] = ' ';
 				GetGold(p, mas, i);
 			}
+	}
 	if (p.emp1)
+	{ 
+		View_emp1V(rows, cols, map_lev, map_obj, map_fog, handle, y, x, p);
 		for (int i = 0; i < total; i++)
 		{
 			if (p.y - 1 == mas[i].y && p.x == mas[i].x)
@@ -1487,7 +1704,10 @@ void DamageV(player &p, char map[N][N], int y, int x, Enemy mas[], int total)
 				GetGold(p, mas, i);
 			}
 		}
+	}
 	if (p.emp2)
+	{
+		View_emp2V(rows, cols, map_lev, map_obj, map_fog, handle, y, x, p);
 		if (y + 1 == p.y)
 			for (int i = 0; i < total; i++)
 			{
@@ -1528,7 +1748,10 @@ void DamageV(player &p, char map[N][N], int y, int x, Enemy mas[], int total)
 					GetGold(p, mas, i);
 				}
 			}
+	}
 	if (p.emp3)
+	{
+		View_emp3V(rows, cols, map_lev, map_obj, map_fog, handle, y, x);
 		for (int i = 0; i < total; i++)
 		{
 			if (y == mas[i].y && x == mas[i].x)
@@ -1556,4 +1779,858 @@ void DamageV(player &p, char map[N][N], int y, int x, Enemy mas[], int total)
 				GetGold(p, mas, i);
 			}
 		}
+	}
+}
+
+void View_emp0(int &rows, int &cols, char map_lev[N][N], char map_obj[N][N], char map_fog[N][N], HANDLE handle, int y, int x)
+{
+	setcur(0, 0);
+	for (int i = 0; i <rows; i++)
+	{
+		for (int j = 0; j < cols; j++)
+		{//Вначале проверяем клетку массива объектов на наличие в ней объекта
+		 //Если есть то выводим
+			if (i == y && j == x)
+			{
+				SetConsoleTextAttribute(handle, 15);
+				printf("/");
+			}
+			else
+			switch (map_fog[i][j])
+			{
+			default:
+				SetConsoleTextAttribute(handle, 15);
+				printf("\n");
+				break;
+			case '0':
+				SetConsoleTextAttribute(handle, 15);
+				printf(" ");
+				break;
+			case '1':
+				switch (map_obj[i][j])
+				{
+				case 'K':
+					SetConsoleTextAttribute(handle, 14);
+					printf("K");
+					break;
+				case 'P':
+					SetConsoleTextAttribute(handle, 15);
+					printf("@");
+					break;
+				case 'C':
+					SetConsoleTextAttribute(handle, 14);
+					printf("D");
+					break;
+				case '1':
+					SetConsoleTextAttribute(handle, 12);
+					printf("§");
+					break;
+				case '2':
+					SetConsoleTextAttribute(handle, 13);
+					printf("¤");
+					break;
+				case ' ':
+					switch (map_lev[i][j])
+					{//Если в массиве объектов пробел то 
+					 //Выводим символ из массива геометрии уровня
+					 //Через эти символы у игрока есть возможность передвигаться
+					case' ':
+						SetConsoleTextAttribute(handle, 8);
+						printf(".");
+						break;
+					case '¶':
+						SetConsoleTextAttribute(handle, 2);
+						printf("%c", map_lev[i][j]);
+						break;
+					case 'D':
+						SetConsoleTextAttribute(handle, 15);
+						printf("%c", map_lev[i][j]);
+						break;
+					}
+					break;
+				case 'W':
+					switch (map_lev[i][j])
+					{
+						//Если в массиве объектов 'W' то 
+						//Выводим символ из массива геометрии уровня
+						//Через эти символы у игрока нету возможности передвигаться
+					case '^':
+						SetConsoleTextAttribute(handle, 7);
+						printf("%c", map_lev[i][j]);
+						break;
+					case '~':
+						SetConsoleTextAttribute(handle, 159);
+						printf("%c", map_lev[i][j]);
+						break;
+					case ' ':
+						SetConsoleTextAttribute(handle, 15);
+						printf("#");
+						break;
+					default:
+						SetConsoleTextAttribute(handle, 15);
+						printf("%c", map_lev[i][j]);
+						break;
+					}
+					break;
+				}
+				break;
+			}
+		}
+	}
+	SetConsoleTextAttribute(handle, 15);
+	printf("\n");
+}
+void View_emp1G(int &rows, int &cols, char map_lev[N][N], char map_obj[N][N], char map_fog[N][N], HANDLE handle, int y, int x, player p)
+{
+	setcur(0, 0);
+	for (int i = 0; i <rows; i++)
+	{
+		for (int j = 0; j < cols; j++)
+		{//Вначале проверяем клетку массива объектов на наличие в ней объекта
+		 //Если есть то выводим
+			if ((i == p.y && j == p.x - 1) || (i == p.y && j == p.x + 1))
+				printf("/");
+			else
+				switch (map_fog[i][j])
+				{
+				default:
+					SetConsoleTextAttribute(handle, 15);
+					printf("\n");
+					break;
+				case '0':
+					SetConsoleTextAttribute(handle, 15);
+					printf(" ");
+					break;
+				case '1':
+					switch (map_obj[i][j])
+					{
+					case 'K':
+						SetConsoleTextAttribute(handle, 14);
+						printf("K");
+						break;
+					case 'P':
+						SetConsoleTextAttribute(handle, 15);
+						printf("@");
+						break;
+					case 'C':
+						SetConsoleTextAttribute(handle, 14);
+						printf("D");
+						break;
+					case '1':
+						SetConsoleTextAttribute(handle, 12);
+						printf("§");
+						break;
+					case '2':
+						SetConsoleTextAttribute(handle, 13);
+						printf("¤");
+						break;
+					case ' ':
+						switch (map_lev[i][j])
+						{//Если в массиве объектов пробел то 
+						 //Выводим символ из массива геометрии уровня
+						 //Через эти символы у игрока есть возможность передвигаться
+						case' ':
+							SetConsoleTextAttribute(handle, 8);
+							printf(".");
+							break;
+						case '¶':
+							SetConsoleTextAttribute(handle, 2);
+							printf("%c", map_lev[i][j]);
+							break;
+						case 'D':
+							SetConsoleTextAttribute(handle, 15);
+							printf("%c", map_lev[i][j]);
+							break;
+						}
+						break;
+					case 'W':
+						switch (map_lev[i][j])
+						{
+							//Если в массиве объектов 'W' то 
+							//Выводим символ из массива геометрии уровня
+							//Через эти символы у игрока нету возможности передвигаться
+						case '^':
+							SetConsoleTextAttribute(handle, 7);
+							printf("%c", map_lev[i][j]);
+							break;
+						case '~':
+							SetConsoleTextAttribute(handle, 159);
+							printf("%c", map_lev[i][j]);
+							break;
+						case ' ':
+							SetConsoleTextAttribute(handle, 15);
+							printf("#");
+							break;
+						default:
+							SetConsoleTextAttribute(handle, 15);
+							printf("%c", map_lev[i][j]);
+							break;
+						}
+						break;
+					}
+					break;
+				}
+			}
+		}
+	SetConsoleTextAttribute(handle, 15);
+	printf("\n");
+}
+void View_emp2G(int &rows, int &cols, char map_lev[N][N], char map_obj[N][N], char map_fog[N][N], HANDLE handle, int y, int x, player p)
+{
+	setcur(0, 0);
+	for (int i = 0; i <rows; i++)
+	{
+		if (x + 1 == p.x)
+			for (int j = 0; j < cols; j++)
+		{//Вначале проверяем клетку массива объектов на наличие в ней объекта
+		 //Если есть то выводим
+
+			if((y == i && x == j) || (y == i && x - 1 == j))
+			printf("/");
+			else{
+				switch (map_fog[i][j])
+				{
+				default:
+					SetConsoleTextAttribute(handle, 15);
+					printf("\n");
+					break;
+				case '0':
+					SetConsoleTextAttribute(handle, 15);
+					printf(" ");
+					break;
+				case '1':
+					switch (map_obj[i][j])
+					{
+					case 'K':
+						SetConsoleTextAttribute(handle, 14);
+						printf("K");
+						break;
+					case 'P':
+						SetConsoleTextAttribute(handle, 15);
+						printf("@");
+						break;
+					case 'C':
+						SetConsoleTextAttribute(handle, 14);
+						printf("D");
+						break;
+					case '1':
+						SetConsoleTextAttribute(handle, 12);
+						printf("§");
+						break;
+					case '2':
+						SetConsoleTextAttribute(handle, 13);
+						printf("¤");
+						break;
+					case ' ':
+						switch (map_lev[i][j])
+						{//Если в массиве объектов пробел то 
+						 //Выводим символ из массива геометрии уровня
+						 //Через эти символы у игрока есть возможность передвигаться
+						case' ':
+							SetConsoleTextAttribute(handle, 8);
+							printf(".");
+							break;
+						case '¶':
+							SetConsoleTextAttribute(handle, 2);
+							printf("%c", map_lev[i][j]);
+							break;
+						case 'D':
+							SetConsoleTextAttribute(handle, 15);
+							printf("%c", map_lev[i][j]);
+							break;
+						}
+						break;
+					case 'W':
+						switch (map_lev[i][j])
+						{
+							//Если в массиве объектов 'W' то 
+							//Выводим символ из массива геометрии уровня
+							//Через эти символы у игрока нету возможности передвигаться
+						case '^':
+							SetConsoleTextAttribute(handle, 7);
+							printf("%c", map_lev[i][j]);
+							break;
+						case '~':
+							SetConsoleTextAttribute(handle, 159);
+							printf("%c", map_lev[i][j]);
+							break;
+						case ' ':
+							SetConsoleTextAttribute(handle, 15);
+							printf("#");
+							break;
+						default:
+							SetConsoleTextAttribute(handle, 15);
+							printf("%c", map_lev[i][j]);
+							break;
+						}
+						break;
+					}
+					break;
+				}
+			}
+		}
+		else
+			for (int j = 0; j < cols; j++)
+			{//Вначале проверяем клетку массива объектов на наличие в ней объекта
+			 //Если есть то выводим
+
+				if ((y == i && x == j) || (y == i && x + 1 == j))
+					printf("/");
+				else {
+					switch (map_fog[i][j])
+					{
+					default:
+						SetConsoleTextAttribute(handle, 15);
+						printf("\n");
+						break;
+					case '0':
+						SetConsoleTextAttribute(handle, 15);
+						printf(" ");
+						break;
+					case '1':
+						switch (map_obj[i][j])
+						{
+						case 'K':
+							SetConsoleTextAttribute(handle, 14);
+							printf("K");
+							break;
+						case 'P':
+							SetConsoleTextAttribute(handle, 15);
+							printf("@");
+							break;
+						case 'C':
+							SetConsoleTextAttribute(handle, 14);
+							printf("D");
+							break;
+						case '1':
+							SetConsoleTextAttribute(handle, 12);
+							printf("§");
+							break;
+						case '2':
+							SetConsoleTextAttribute(handle, 13);
+							printf("¤");
+							break;
+						case ' ':
+							switch (map_lev[i][j])
+							{//Если в массиве объектов пробел то 
+							 //Выводим символ из массива геометрии уровня
+							 //Через эти символы у игрока есть возможность передвигаться
+							case' ':
+								SetConsoleTextAttribute(handle, 8);
+								printf(".");
+								break;
+							case '¶':
+								SetConsoleTextAttribute(handle, 2);
+								printf("%c", map_lev[i][j]);
+								break;
+							case 'D':
+								SetConsoleTextAttribute(handle, 15);
+								printf("%c", map_lev[i][j]);
+								break;
+							}
+							break;
+						case 'W':
+							switch (map_lev[i][j])
+							{
+								//Если в массиве объектов 'W' то 
+								//Выводим символ из массива геометрии уровня
+								//Через эти символы у игрока нету возможности передвигаться
+							case '^':
+								SetConsoleTextAttribute(handle, 7);
+								printf("%c", map_lev[i][j]);
+								break;
+							case '~':
+								SetConsoleTextAttribute(handle, 159);
+								printf("%c", map_lev[i][j]);
+								break;
+							case ' ':
+								SetConsoleTextAttribute(handle, 15);
+								printf("#");
+								break;
+							default:
+								SetConsoleTextAttribute(handle, 15);
+								printf("%c", map_lev[i][j]);
+								break;
+							}
+							break;
+						}
+						break;
+					}
+				}
+			}
+	}
+	SetConsoleTextAttribute(handle, 15);
+	printf("\n");
+}
+void View_emp3G(int &rows, int &cols, char map_lev[N][N], char map_obj[N][N], char map_fog[N][N], HANDLE handle, int y, int x)
+{
+	setcur(0, 0);
+	for (int i = 0; i <rows; i++)
+	{
+		for (int j = 0; j < cols; j++)
+		{//Вначале проверяем клетку массива объектов на наличие в ней объекта
+		 //Если есть то выводим
+			if ((i == y && j == x) || (y + 1 == i && x == j) || (y - 1 == i && x == j))
+				printf("/");
+			else
+				switch (map_fog[i][j])
+				{
+				default:
+					SetConsoleTextAttribute(handle, 15);
+					printf("\n");
+					break;
+				case '0':
+					SetConsoleTextAttribute(handle, 15);
+					printf(" ");
+					break;
+				case '1':
+					switch (map_obj[i][j])
+					{
+					case 'K':
+						SetConsoleTextAttribute(handle, 14);
+						printf("K");
+						break;
+					case 'P':
+						SetConsoleTextAttribute(handle, 15);
+						printf("@");
+						break;
+					case 'C':
+						SetConsoleTextAttribute(handle, 14);
+						printf("D");
+						break;
+					case '1':
+						SetConsoleTextAttribute(handle, 12);
+						printf("§");
+						break;
+					case '2':
+						SetConsoleTextAttribute(handle, 13);
+						printf("¤");
+						break;
+					case ' ':
+						switch (map_lev[i][j])
+						{//Если в массиве объектов пробел то 
+						 //Выводим символ из массива геометрии уровня
+						 //Через эти символы у игрока есть возможность передвигаться
+						case' ':
+							SetConsoleTextAttribute(handle, 8);
+							printf(".");
+							break;
+						case '¶':
+							SetConsoleTextAttribute(handle, 2);
+							printf("%c", map_lev[i][j]);
+							break;
+						case 'D':
+							SetConsoleTextAttribute(handle, 15);
+							printf("%c", map_lev[i][j]);
+							break;
+						}
+						break;
+					case 'W':
+						switch (map_lev[i][j])
+						{
+							//Если в массиве объектов 'W' то 
+							//Выводим символ из массива геометрии уровня
+							//Через эти символы у игрока нету возможности передвигаться
+						case '^':
+							SetConsoleTextAttribute(handle, 7);
+							printf("%c", map_lev[i][j]);
+							break;
+						case '~':
+							SetConsoleTextAttribute(handle, 159);
+							printf("%c", map_lev[i][j]);
+							break;
+						case ' ':
+							SetConsoleTextAttribute(handle, 15);
+							printf("#");
+							break;
+						default:
+							SetConsoleTextAttribute(handle, 15);
+							printf("%c", map_lev[i][j]);
+							break;
+						}
+						break;
+					}
+					break;
+				}
+		}
+	}
+	SetConsoleTextAttribute(handle, 15);
+	printf("\n");
+}
+void View_emp1V(int &rows, int &cols, char map_lev[N][N], char map_obj[N][N], char map_fog[N][N], HANDLE handle, int y, int x, player p)
+{
+	setcur(0, 0);
+	for (int i = 0; i <rows; i++)
+	{
+		for (int j = 0; j < cols; j++)
+		{//Вначале проверяем клетку массива объектов на наличие в ней объекта
+		 //Если есть то выводим
+			if ((i == p.y - 1 && j == p.x ) || (i == p.y + 1 && j == p.x))
+				printf("/");
+			else
+				switch (map_fog[i][j])
+				{
+				default:
+					SetConsoleTextAttribute(handle, 15);
+					printf("\n");
+					break;
+				case '0':
+					SetConsoleTextAttribute(handle, 15);
+					printf(" ");
+					break;
+				case '1':
+					switch (map_obj[i][j])
+					{
+					case 'K':
+						SetConsoleTextAttribute(handle, 14);
+						printf("K");
+						break;
+					case 'P':
+						SetConsoleTextAttribute(handle, 15);
+						printf("@");
+						break;
+					case 'C':
+						SetConsoleTextAttribute(handle, 14);
+						printf("D");
+						break;
+					case '1':
+						SetConsoleTextAttribute(handle, 12);
+						printf("§");
+						break;
+					case '2':
+						SetConsoleTextAttribute(handle, 13);
+						printf("¤");
+						break;
+					case ' ':
+						switch (map_lev[i][j])
+						{//Если в массиве объектов пробел то 
+						 //Выводим символ из массива геометрии уровня
+						 //Через эти символы у игрока есть возможность передвигаться
+						case' ':
+							SetConsoleTextAttribute(handle, 8);
+							printf(".");
+							break;
+						case '¶':
+							SetConsoleTextAttribute(handle, 2);
+							printf("%c", map_lev[i][j]);
+							break;
+						case 'D':
+							SetConsoleTextAttribute(handle, 15);
+							printf("%c", map_lev[i][j]);
+							break;
+						}
+						break;
+					case 'W':
+						switch (map_lev[i][j])
+						{
+							//Если в массиве объектов 'W' то 
+							//Выводим символ из массива геометрии уровня
+							//Через эти символы у игрока нету возможности передвигаться
+						case '^':
+							SetConsoleTextAttribute(handle, 7);
+							printf("%c", map_lev[i][j]);
+							break;
+						case '~':
+							SetConsoleTextAttribute(handle, 159);
+							printf("%c", map_lev[i][j]);
+							break;
+						case ' ':
+							SetConsoleTextAttribute(handle, 15);
+							printf("#");
+							break;
+						default:
+							SetConsoleTextAttribute(handle, 15);
+							printf("%c", map_lev[i][j]);
+							break;
+						}
+						break;
+					}
+					break;
+				}
+		}
+	}
+	SetConsoleTextAttribute(handle, 15);
+	printf("\n");
+}
+void View_emp2V(int &rows, int &cols, char map_lev[N][N], char map_obj[N][N], char map_fog[N][N], HANDLE handle, int y, int x, player p)
+{
+	setcur(0, 0);
+	for (int i = 0; i <rows; i++)
+	{
+		if (x + 1 == p.x)
+			for (int j = 0; j < cols; j++)
+			{//Вначале проверяем клетку массива объектов на наличие в ней объекта
+			 //Если есть то выводим
+
+				if ((y == i && x == j) || (y == i - 1 && x == j))
+					printf("/");
+				else {
+					switch (map_fog[i][j])
+					{
+					default:
+						SetConsoleTextAttribute(handle, 15);
+						printf("\n");
+						break;
+					case '0':
+						SetConsoleTextAttribute(handle, 15);
+						printf(" ");
+						break;
+					case '1':
+						switch (map_obj[i][j])
+						{
+						case 'K':
+							SetConsoleTextAttribute(handle, 14);
+							printf("K");
+							break;
+						case 'P':
+							SetConsoleTextAttribute(handle, 15);
+							printf("@");
+							break;
+						case 'C':
+							SetConsoleTextAttribute(handle, 14);
+							printf("D");
+							break;
+						case '1':
+							SetConsoleTextAttribute(handle, 12);
+							printf("§");
+							break;
+						case '2':
+							SetConsoleTextAttribute(handle, 13);
+							printf("¤");
+							break;
+						case ' ':
+							switch (map_lev[i][j])
+							{//Если в массиве объектов пробел то 
+							 //Выводим символ из массива геометрии уровня
+							 //Через эти символы у игрока есть возможность передвигаться
+							case' ':
+								SetConsoleTextAttribute(handle, 8);
+								printf(".");
+								break;
+							case '¶':
+								SetConsoleTextAttribute(handle, 2);
+								printf("%c", map_lev[i][j]);
+								break;
+							case 'D':
+								SetConsoleTextAttribute(handle, 15);
+								printf("%c", map_lev[i][j]);
+								break;
+							}
+							break;
+						case 'W':
+							switch (map_lev[i][j])
+							{
+								//Если в массиве объектов 'W' то 
+								//Выводим символ из массива геометрии уровня
+								//Через эти символы у игрока нету возможности передвигаться
+							case '^':
+								SetConsoleTextAttribute(handle, 7);
+								printf("%c", map_lev[i][j]);
+								break;
+							case '~':
+								SetConsoleTextAttribute(handle, 159);
+								printf("%c", map_lev[i][j]);
+								break;
+							case ' ':
+								SetConsoleTextAttribute(handle, 15);
+								printf("#");
+								break;
+							default:
+								SetConsoleTextAttribute(handle, 15);
+								printf("%c", map_lev[i][j]);
+								break;
+							}
+							break;
+						}
+						break;
+					}
+				}
+			}
+		else
+			for (int j = 0; j < cols; j++)
+			{//Вначале проверяем клетку массива объектов на наличие в ней объекта
+			 //Если есть то выводим
+
+				if ((y == i && x == j) || (y == i + 1 && x == j))
+					printf("/");
+				else {
+					switch (map_fog[i][j])
+					{
+					default:
+						SetConsoleTextAttribute(handle, 15);
+						printf("\n");
+						break;
+					case '0':
+						SetConsoleTextAttribute(handle, 15);
+						printf(" ");
+						break;
+					case '1':
+						switch (map_obj[i][j])
+						{
+						case 'K':
+							SetConsoleTextAttribute(handle, 14);
+							printf("K");
+							break;
+						case 'P':
+							SetConsoleTextAttribute(handle, 15);
+							printf("@");
+							break;
+						case 'C':
+							SetConsoleTextAttribute(handle, 14);
+							printf("D");
+							break;
+						case '1':
+							SetConsoleTextAttribute(handle, 12);
+							printf("§");
+							break;
+						case '2':
+							SetConsoleTextAttribute(handle, 13);
+							printf("¤");
+							break;
+						case ' ':
+							switch (map_lev[i][j])
+							{//Если в массиве объектов пробел то 
+							 //Выводим символ из массива геометрии уровня
+							 //Через эти символы у игрока есть возможность передвигаться
+							case' ':
+								SetConsoleTextAttribute(handle, 8);
+								printf(".");
+								break;
+							case '¶':
+								SetConsoleTextAttribute(handle, 2);
+								printf("%c", map_lev[i][j]);
+								break;
+							case 'D':
+								SetConsoleTextAttribute(handle, 15);
+								printf("%c", map_lev[i][j]);
+								break;
+							}
+							break;
+						case 'W':
+							switch (map_lev[i][j])
+							{
+								//Если в массиве объектов 'W' то 
+								//Выводим символ из массива геометрии уровня
+								//Через эти символы у игрока нету возможности передвигаться
+							case '^':
+								SetConsoleTextAttribute(handle, 7);
+								printf("%c", map_lev[i][j]);
+								break;
+							case '~':
+								SetConsoleTextAttribute(handle, 159);
+								printf("%c", map_lev[i][j]);
+								break;
+							case ' ':
+								SetConsoleTextAttribute(handle, 15);
+								printf("#");
+								break;
+							default:
+								SetConsoleTextAttribute(handle, 15);
+								printf("%c", map_lev[i][j]);
+								break;
+							}
+							break;
+						}
+						break;
+					}
+				}
+			}
+	}
+	SetConsoleTextAttribute(handle, 15);
+	printf("\n");
+}
+void View_emp3V(int &rows, int &cols, char map_lev[N][N], char map_obj[N][N], char map_fog[N][N], HANDLE handle, int y, int x)
+{
+	setcur(0, 0);
+	for (int i = 0; i <rows; i++)
+	{
+		for (int j = 0; j < cols; j++)
+		{//Вначале проверяем клетку массива объектов на наличие в ней объекта
+		 //Если есть то выводим
+			if ((i == y && j == x) || (y  == i && x + 1 == j) || (y == i && x - 1 == j))
+				printf("/");
+			else
+				switch (map_fog[i][j])
+				{
+				default:
+					SetConsoleTextAttribute(handle, 15);
+					printf("\n");
+					break;
+				case '0':
+					SetConsoleTextAttribute(handle, 15);
+					printf(" ");
+					break;
+				case '1':
+					switch (map_obj[i][j])
+					{
+					case 'K':
+						SetConsoleTextAttribute(handle, 14);
+						printf("K");
+						break;
+					case 'P':
+						SetConsoleTextAttribute(handle, 15);
+						printf("@");
+						break;
+					case 'C':
+						SetConsoleTextAttribute(handle, 14);
+						printf("D");
+						break;
+					case '1':
+						SetConsoleTextAttribute(handle, 12);
+						printf("§");
+						break;
+					case '2':
+						SetConsoleTextAttribute(handle, 13);
+						printf("¤");
+						break;
+					case ' ':
+						switch (map_lev[i][j])
+						{//Если в массиве объектов пробел то 
+						 //Выводим символ из массива геометрии уровня
+						 //Через эти символы у игрока есть возможность передвигаться
+						case' ':
+							SetConsoleTextAttribute(handle, 8);
+							printf(".");
+							break;
+						case '¶':
+							SetConsoleTextAttribute(handle, 2);
+							printf("%c", map_lev[i][j]);
+							break;
+						case 'D':
+							SetConsoleTextAttribute(handle, 15);
+							printf("%c", map_lev[i][j]);
+							break;
+						}
+						break;
+					case 'W':
+						switch (map_lev[i][j])
+						{
+							//Если в массиве объектов 'W' то 
+							//Выводим символ из массива геометрии уровня
+							//Через эти символы у игрока нету возможности передвигаться
+						case '^':
+							SetConsoleTextAttribute(handle, 7);
+							printf("%c", map_lev[i][j]);
+							break;
+						case '~':
+							SetConsoleTextAttribute(handle, 159);
+							printf("%c", map_lev[i][j]);
+							break;
+						case ' ':
+							SetConsoleTextAttribute(handle, 15);
+							printf("#");
+							break;
+						default:
+							SetConsoleTextAttribute(handle, 15);
+							printf("%c", map_lev[i][j]);
+							break;
+						}
+						break;
+					}
+					break;
+				}
+		}
+	}
+	SetConsoleTextAttribute(handle, 15);
+	printf("\n");
 }
