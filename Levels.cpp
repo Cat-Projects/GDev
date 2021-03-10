@@ -4,20 +4,28 @@
 #include <Windows.h>
 #define N 256
 enum {up = 72, down = 80, left = 75, right = 77, ex =27};
-struct player { int x, y, hp, key; };
+struct player
+{
+	int x, y, hp, key;
+	int gold;
+	bool emp0, emp1, emp2, emp3;                              // emp0 - обычная атака(удар на одну выбранную клеку, emp1 - двойной удар(удар на выбранную клетку и симметричную ей, относительно игрока)
+	bool attacked;
+};                                                        // emp2 - длинный удар(удар на клетку и следующую за ней), emp3 - широкий удар (удар на клетку и побокам от нее, относительно игрока);
+
 struct Enemy { int x, y, damage; bool death; };
+
 int rows, cols;
 char map_lev[N][N];
 char map_obj[N][N];
 char map_fog[N][N];
 HANDLE handle = GetStdHandle(STD_OUTPUT_HANDLE);
 
-void Player_View(int &rows, int &cols, char map_lev[N][N], char map_obj[N][N], char map_fog[N][N], HANDLE handle);
+void Player_View(int &rows, int &cols, char map_lev[N][N], char map_obj[N][N], char map_fog[N][N], HANDLE handle, bool player_attacked = 0);
 void Show_Level(int &rows, int &cols, char map_lev[N][N], char map_obj[N][N], HANDLE handle);
 void TestWrite(int rows, int cols, char map_lev[N][N], char name[]);
 void TestRead(int &rows, int &cols, char map_lev[N][N], char name[]);
 void CheckP(player &p, char map_obj[N][N], int mov);
-void PlayerTurn(player &p, char map_obj[N][N]);
+void PlayerTurn(player &p, char map_obj[N][N], Enemy mas[], int total);
 void color();
 void setcur(int x, int y);
 void Read_Lev(int &rows, int &cols, char map_lev[N][N], char name[]);
@@ -26,7 +34,7 @@ void Read_Fog(int rows, int cols, char map_fog[N][N], char name[]);
 void Fog_Change(int rows, int cols, player p, char map_fog[N][N]);
 void Main_Menu(int &rows, int &cols, player &p, char map_lev[N][N], char map_obj[N][N], char map_fog[N][N], Enemy mas[], int &total);
 void Level_Load(int &rows, int &cols, player &p, char map_lev[N][N], char map_obj[N][N], char map_fog[N][N], Enemy mas[], int& total);
-void Refresh(int &rows, int &cols, player p, char map_lev[N][N], char map_obj[N][N], char map_fog[N][N], HANDLE handle, bool player_attacked = 0);
+void Refresh(int &rows, int &cols, player p, char map_lev[N][N], char map_obj[N][N], char map_fog[N][N], HANDLE handle);
 void Game_Process(int &rows, int &cols, player p, char map_lev[N][N], char map_obj[N][N], char map_fog[N][N], HANDLE handle, Enemy mas[], int total);
 bool PlayerDetected(player player, char map[N][N], Enemy mas[], int i);
 void EnemyAction(player& player, char map[N][N], Enemy mas[], int i);
@@ -40,40 +48,42 @@ int Level_Choice();
 void Print_Name();
 void Print_Menu();
 void Print_Map(int i, int j, char map_lev[N][N], char map_obj[N][N], HANDLE handle, bool player_attacked = 0);
-void Player_View2(int rows, int cols, char map_lev[N][N], char map_obj[N][N], player p, HANDLE handle, bool player_attacked = 0);
-
-
+void Player_View2(int rows, int cols, char map_lev[N][N], char map_obj[N][N], player p, HANDLE handle);
+void Input_Enemy(int rows, int cols, char map_obj[N][N], Enemy mas[], int& total);
+void Attack(player& p, char map[N][N], int act, Enemy mas[], int total);
+void DamageV(player &p, char map[N][N], int y, int x, Enemy mas[], int total);
+void DamageG(player &p, char map[N][N], int y, int x, Enemy mas[], int total);
 
 int main()
 {
 	system("chcp 1251");
 	player p;
-	p.x = 16; p.y = 25; p.key = 0; p.hp = 3;
+	p.x = 16; p.y = 25; p.key = 0; p.hp = 3; p.gold = 0;
 	Enemy mas[N];
 	int total = 0;
 	CONSOLE_FONT_INFOEX fontInfo;
 
-	fontInfo.cbSize = sizeof(fontInfo);
+	//fontInfo.cbSize = sizeof(fontInfo); *Раскомить для Player_View2
 
-	GetCurrentConsoleFontEx(handle, TRUE, &fontInfo);
+	//GetCurrentConsoleFontEx(handle, TRUE, &fontInfo); *Раскомить для Player_View2
 
 
-	wcscpy(fontInfo.FaceName, L"Lucida Console");
+	//wcscpy(fontInfo.FaceName, L"Lucida Console"); *Раскомить для Player_View2
 
-	fontInfo.dwFontSize.Y = 17;
-	SetCurrentConsoleFontEx(handle, TRUE, &fontInfo);
+	//fontInfo.dwFontSize.Y = 17;
+	//SetCurrentConsoleFontEx(handle, TRUE, &fontInfo); *Раскомить для Player_View2
 
-	SetConsoleDisplayMode(handle, CONSOLE_FULLSCREEN_MODE, NULL);
+	//SetConsoleDisplayMode(handle, CONSOLE_FULLSCREEN_MODE, NULL); *Раскомить для Player_View2
 
 
 	do
 	{
 		system("cls");
 		Main_Menu(rows, cols, p, map_lev, map_obj, map_fog, mas, total);
-		fontInfo.dwFontSize.Y = 26;
-		SetCurrentConsoleFontEx(handle, TRUE, &fontInfo);
+		//fontInfo.dwFontSize.Y = 26; *Раскомить для Player_View2
+		//SetCurrentConsoleFontEx(handle, TRUE, &fontInfo); *Раскомить для Player_View2
 		system("cls");
-		//printf("%i %i . %i %i", mas[0].x, mas[0].y, mas[total - 1].x, mas[total - 1].y);
+		//printf("%i %i . %i %i", mas[0].x, mas[0].y, mas[total - 1].x, mas[total - 1].y); 
 		//system("pause");
 		Refresh(rows, cols, p, map_lev, map_obj, map_fog, handle);
 		Game_Process(rows, cols, p, map_lev, map_obj, map_fog, handle, mas, total);
@@ -82,7 +92,7 @@ int main()
 	return 0;
 }
 	//Функция отображения карты *В разработке
-void Player_View(int &rows, int &cols, char map_lev[N][N], char map_obj[N][N], char map_fog[N][N], HANDLE handle)
+void Player_View(int &rows, int &cols, char map_lev[N][N], char map_obj[N][N], char map_fog[N][N], HANDLE handle, bool player_attacked)
 {
 	setcur(0, 0);
 	for (int i = 0; i <rows; i++)
@@ -370,7 +380,7 @@ int Randomize(int a, int b)
 }
 
 	//Функция ввода клавиши во время хода игрока
-void PlayerTurn(player &p, char map_obj[N][N])
+void PlayerTurn(player &p, char map_obj[N][N], Enemy mas[], int total)
 {
 	do
 	{
@@ -383,7 +393,7 @@ void PlayerTurn(player &p, char map_obj[N][N])
 		}
 		else if (act == 141 || act == 145 || act == 115 || act == 116)
 		{
-			//	Attack(player, map, act);
+			Attack(p, map_obj, act, mas, total);
 			return;
 		}
 	} while (true);
@@ -451,43 +461,65 @@ void Read_Fog(int rows, int cols, char map_fog[N][N], char name[])
 void Fog_Change(int rows, int cols, player p, char map_fog[N][N])
 {
 	int a, b;
-	if (p.y - 3 < 0)
+	if (p.y - 2 < 0)
 	{
 		a = 0;
-		b = p.y + 3;
+		b = p.y + 7;
 	}
-	else if (p.y + 3 >= rows)
+	else if (p.y + 2 >= rows)
 	{
-		a = p.y - 3;
+		a = p.y - 4;
 		b = rows;
 	}
 	else
 	{
-		a = p.y - 3;
-		b = p.y + 3;
+		a = p.y - 4;
+		b = p.y + 5;
 	}
 
 	int c, d;
-	if (p.x - 3 <0)
+	if (p.x - 4 < 0)
 	{
 		c = 0;
-		d = p.x + 3;
+		d = p.x + 6;
 	}
-	else if (p.x + 3 >= cols)
+	else if (p.x + 5 >= cols)
 	{
-		c = p.x - 3;
-		d = cols-1;
+		c = p.x - 6;
+		d = cols - 1;
 	}
 	else
 	{
-		c = p.x - 3;
-		d = p.x + 4;
+		c = p.x - 4;
+		d = p.x + 5;
 	}
-	for (int i = a; i < b; i++)
+
+	int i, j, n = 0;
+	int center_y = (a + b) / 2;
+	int center_x = (c + d) / 2;
+	for (i = a; i < b; i++)
 	{
-		for (int j = c; j < d; j++)
+		if (i <= center_y)
 		{
-			map_fog[i][j] = '1';
+			for (j = c; j < d; j++)
+			{
+
+				// Верхняя половина ромба
+				if (j >= center_x + n && j <= center_x - n)
+					map_fog[i][j] = '1';
+			}
+			n--;
+		}
+		else
+		{
+			n++;
+			for (j = c; j < d; j++)
+			{
+				// Нижняя половина ромба
+				if (j >= center_x + n + 1 && j <= center_x - n - 1)
+					map_fog[i][j] = '1';
+			}
+
 		}
 	}
 }
@@ -648,11 +680,16 @@ void Main_Menu(int &rows, int &cols, player &p, char map_lev[N][N], char map_obj
 }
 	
 	//Обновление экрана игрока
-void Refresh(int &rows, int&cols, player p, char map_lev[N][N], char map_obj[N][N], char map_fog[N][N], HANDLE handle, bool player_attacked)
+void Refresh(int &rows, int&cols, player p, char map_lev[N][N], char map_obj[N][N], char map_fog[N][N], HANDLE handle)
 {
 	//Show_Level(rows, cols, map_lev, map_obj, handle);
-	Player_View2(rows, cols, map_lev, map_obj, p, handle, player_attacked);
-	printf("HP: %i", p.hp);
+	Fog_Change(rows, cols, p, map_fog);
+	//system("cls"); *Раскомить для Player_View2
+	Player_View(rows, cols, map_lev, map_obj, map_fog, handle);
+	//Player_View2(rows, cols, map_lev, map_obj, p, handle); *Раскомить для Player_View2
+	//printf("\n>>>--------------------------------------------------------------------------<<<\n"); *Раскомить для Player_View2
+	//printf("    HP: %i \t\t\t\t\t\tKeys: %i     Gold: %i", p.hp, p.key, p.gold); *Раскомить для Player_View2
+	printf("HP: %i Keys: %i Gold: %i", p.hp, p.key, p.gold);
 }
 
 	//Основной процесс игры
@@ -660,7 +697,7 @@ void Game_Process(int &rows, int &cols, player p, char map_lev[N][N], char map_o
 {
 	do
 	{
-		PlayerTurn(p, map_obj);
+		PlayerTurn(p, map_obj, mas, total);
 		Refresh(rows, cols, p, map_lev, map_obj, map_fog, handle);
 		Sleep(1000);
 		EnemyTurn(p, map_obj, mas, total);
@@ -684,8 +721,10 @@ bool IsPlayer(Enemy mas[], char map[N][N], int i, player& player, int a, int b)
 	if (map[a][b] == 'P')
 	{
 		player.hp -= mas[i].damage;
-		Refresh(rows, cols, player, map_lev, map_obj, map_fog, handle, TRUE);
+		player.attacked = 1;
+		Refresh(rows, cols, player, map_lev, map_obj, map_fog, handle);
 		Sleep(1000);
+		player.attacked = 0;
 		return true;
 	}
 	return false;
@@ -1140,14 +1179,14 @@ void color()
 		}
 	}
 
-void Player_View2(int rows, int cols, char map_lev[N][N], char map_obj[N][N], player p, HANDLE handle, bool player_attacked )
+void Player_View2(int rows, int cols, char map_lev[N][N], char map_obj[N][N], player p, HANDLE handle )
 {
 	setcur(0, 0);
 	int a, b;
 	if (p.y - 2 < 0)
 	{
 		a = 0;
-		b = p.y +5;
+		b = p.y +7;
 	}
 	else if (p.y + 2 >= rows)
 	{
@@ -1161,15 +1200,15 @@ void Player_View2(int rows, int cols, char map_lev[N][N], char map_obj[N][N], pl
 	}
 
 	int c, d;
-	if (p.x - 3 <0)
+	if (p.x - 4 <0)
 	{
 		c = 0;
-		d = p.x + 5;
+		d = p.x + 6;
 	}
-	else if (p.x + 3 >= cols)
+	else if (p.x + 5 >= cols)
 	{
-		c = p.x - 4;
-		d = cols - 1;
+		c = p.x -6;
+		d = cols-1;
 	}
 	else
 	{
@@ -1191,7 +1230,7 @@ void Player_View2(int rows, int cols, char map_lev[N][N], char map_obj[N][N], pl
 				// Верхняя половина ромба
 				if (j >= center_x + n && j <= center_x - n)
 				{
-					Print_Map(i, j, map_lev, map_obj, handle, player_attacked);
+					Print_Map(i, j, map_lev, map_obj, handle, p.attacked);
 					SetConsoleTextAttribute(handle, 15);
 				}
 				else
@@ -1225,16 +1264,13 @@ void Print_Map(int i, int j, char map_lev[N][N], char map_obj[N][N], HANDLE hand
 {
 	switch (map_obj[i][j])
 	{
-	case '\n':
-		printf("\n");
-		break;
 	case 'K':
 		SetConsoleTextAttribute(handle, 14);
 		printf("K");
 		break;
 	case 'P':
 		SetConsoleTextAttribute(handle, 15);
-		if (player_attacked)
+		if (!player_attacked)
 			printf("/");
 		else
 			printf("@");
@@ -1295,4 +1331,229 @@ void Print_Map(int i, int j, char map_lev[N][N], char map_obj[N][N], HANDLE hand
 		}
 		break;
 	}
+}
+
+void GetGold(player& p, Enemy mas[], int i)
+{
+	int gld = Randomize(5, 20);
+	if (Randomize(0, 3) > 0)
+		p.gold += gld * mas[i].damage / 2;
+	return;
+}
+
+void Attack(player& p, char map[N][N], int act, Enemy mas[], int total)
+{
+	switch (act)
+	{
+	case 141: DamageV(p, map, p.y - 1, p.x, mas, total); break;
+	case 145: DamageV(p, map, p.y + 1, p.x, mas, total); break;
+	case 115: DamageG(p, map, p.y, p.x - 1, mas, total); break;
+	case 116: DamageG(p, map, p.y, p.x + 1, mas, total); break;
+	}
+}
+
+void DamageG(player &p, char map[N][N], int y, int x, Enemy mas[], int total)
+{
+	if (p.emp0)
+		for (int i = 0; i < total; i++)
+			if (y == mas[i].y && x == mas[i].x)
+			{
+				mas[i].death = true;
+				mas[i].x = 0;
+				mas[i].y = 0;
+				map[y][x] = ' ';
+				GetGold(p, mas, i);
+			}
+	if (p.emp1)
+		for (int i = 0; i < total; i++)
+		{
+			if (p.y == mas[i].y && p.x - 1 == mas[i].x)
+			{
+				mas[i].death = true;
+				mas[i].x = 0;
+				mas[i].y = 0;
+				map[p.y][p.x - 1] = ' ';
+				GetGold(p, mas, i);
+			}
+			if (p.y == mas[i].y && p.x + 1 == mas[i].x)
+			{
+				mas[i].death = true;
+				mas[i].x = 0;
+				mas[i].y = 0;
+				map[p.y][p.x + 1] = ' ';
+				GetGold(p, mas, i);
+			}
+		}
+	if (p.emp2)
+		if (x + 1 == p.x)
+			for (int i = 0; i < total; i++)
+			{
+				if (y == mas[i].y && x == mas[i].x)
+				{
+					mas[i].death = true;
+					mas[i].x = 0;
+					mas[i].y = 0;
+					map[y][x] = ' ';
+					GetGold(p, mas, i);
+				}
+				if (y == mas[i].y && x - 1 == mas[i].x)
+				{
+					mas[i].death = true;
+					mas[i].x = 0;
+					mas[i].y = 0;
+					map[y][x - 1] = ' ';
+					GetGold(p, mas, i);
+				}
+			}
+		else
+			for (int i = 0; i < total; i++)
+			{
+				if (y == mas[i].y && x == mas[i].x)
+				{
+					mas[i].death = true;
+					mas[i].x = 0;
+					mas[i].y = 0;
+					map[y][x] = ' ';
+					GetGold(p, mas, i);
+				}
+				if (y == mas[i].y && x + 1 == mas[i].x)
+				{
+					mas[i].death = true;
+					mas[i].x = 0;
+					mas[i].y = 0;
+					map[y][x + 1] = ' ';
+					GetGold(p, mas, i);
+				}
+			}
+	if (p.emp3)
+		for (int i = 0; i < total; i++)
+		{
+			if (y == mas[i].y && x == mas[i].x)
+			{
+				mas[i].death = true;
+				mas[i].x = 0;
+				mas[i].y = 0;
+				map[y][x] = ' ';
+				GetGold(p, mas, i);
+			}
+			if (y + 1 == mas[i].y && x == mas[i].x)
+			{
+				mas[i].death = true;
+				mas[i].x = 0;
+				mas[i].y = 0;
+				map[y + 1][x] = ' ';
+				GetGold(p, mas, i);
+			}
+			if (y - 1 == mas[i].y && x == mas[i].x)
+			{
+				mas[i].death = true;
+				mas[i].x = 0;
+				mas[i].y = 0;
+				map[y - 1][x] = ' ';
+				GetGold(p, mas, i);
+			}
+		}
+}
+
+void DamageV(player &p, char map[N][N], int y, int x, Enemy mas[], int total)
+{
+	if (p.emp0)
+		for (int i = 0; i < total; i++)
+			if (y == mas[i].y && x == mas[i].x)
+			{
+				mas[i].death = true;
+				mas[i].x = 0;
+				mas[i].y = 0;
+				map[y][x] = ' ';
+				GetGold(p, mas, i);
+			}
+	if (p.emp1)
+		for (int i = 0; i < total; i++)
+		{
+			if (p.y - 1 == mas[i].y && p.x == mas[i].x)
+			{
+				mas[i].death = true;
+				mas[i].x = 0;
+				mas[i].y = 0;
+				map[p.y - 1][p.x] = ' ';
+				GetGold(p, mas, i);
+			}
+			if (p.y + 1 == mas[i].y && p.x == mas[i].x)
+			{
+				mas[i].death = true;
+				mas[i].x = 0;
+				mas[i].y = 0;
+				map[p.y + 1][p.x] = ' ';
+				GetGold(p, mas, i);
+			}
+		}
+	if (p.emp2)
+		if (y + 1 == p.y)
+			for (int i = 0; i < total; i++)
+			{
+				if (y == mas[i].y && x == mas[i].x)
+				{
+					mas[i].death = true;
+					mas[i].x = 0;
+					mas[i].y = 0;
+					map[y][x] = ' ';
+					GetGold(p, mas, i);
+				}
+				if (y - 1 == mas[i].y && x == mas[i].x)
+				{
+					mas[i].death = true;
+					mas[i].x = 0;
+					mas[i].y = 0;
+					map[y - 1][x] = ' ';
+					GetGold(p, mas, i);
+				}
+			}
+		else
+			for (int i = 0; i < total; i++)
+			{
+				if (y == mas[i].y && x == mas[i].x)
+				{
+					mas[i].death = true;
+					mas[i].x = 0;
+					mas[i].y = 0;
+					map[y][x] = ' ';
+					GetGold(p, mas, i);
+				}
+				if (y + 1 == mas[i].y && x == mas[i].x)
+				{
+					mas[i].death = true;
+					mas[i].x = 0;
+					mas[i].y = 0;
+					map[y + 1][x] = ' ';
+					GetGold(p, mas, i);
+				}
+			}
+	if (p.emp3)
+		for (int i = 0; i < total; i++)
+		{
+			if (y == mas[i].y && x == mas[i].x)
+			{
+				mas[i].death = true;
+				mas[i].x = 0;
+				mas[i].y = 0;
+				map[y][x] = ' ';
+				GetGold(p, mas, i);
+			}
+			if (y == mas[i].y && x + 1 == mas[i].x)
+			{
+				mas[i].death = true;
+				mas[i].x = 0;
+				mas[i].y = 0;
+				map[y][x + 1] = ' ';
+				GetGold(p, mas, i);
+			}
+			if (y == mas[i].y && x - 1 == mas[i].x)
+			{
+				mas[i].death = true;
+				mas[i].x = 0;
+				mas[i].y = 0;
+				map[y][x - 1] = ' ';
+				GetGold(p, mas, i);
+			}
+		}
 }
